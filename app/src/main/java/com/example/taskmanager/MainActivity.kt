@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.taskmanager.ui.theme.TaskManagerTheme
+import com.example.taskmanager.presentation.common.theme.TaskManagerTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +47,8 @@ fun TaskAccept() {
     ) {
         ImageCheck()
         Title(stringResource(R.string.title), Modifier.padding(top = 24.dp, bottom = 8.dp))
-        Title(stringResource(R.string.subtitle))
+        /*Title(stringResource(R.string.subtitle))*/
+        Subtitle(stringResource(R.string.subtitle)+" PERRO", Modifier.padding(top = 8.dp))
     }
 }
 
