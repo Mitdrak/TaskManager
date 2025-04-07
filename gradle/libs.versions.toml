@@ -26,6 +26,7 @@ workRuntimeKtx = "2.9.0"
 hilt = "2.52" # Use the latest version of Hilt
 agp = "8.7.2"
 playServicesAuth = "21.3.0"
+multidex = "2.0.1"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
@@ -61,6 +62,7 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
+androidx-multidex = { group = "androidx.multidex", name = "multidex", version.ref = "multidex" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

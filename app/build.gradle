@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.hilt.android) // Apply the Hilt plugin
     alias(libs.plugins.google.services)
     alias(libs.plugins.crashlytics)
-    id("com.google.devtools.ksp")
+    id("com.google.devtools.ksp") version "2.1.10-1.0.31"
 
 }
 
@@ -43,6 +43,7 @@ android {
     }
     buildFeatures {
         compose true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion '1.3.2'
@@ -68,7 +69,8 @@ dependencies {
     implementation libs.androidx.material3
     // Hilt
     implementation libs.hilt.android
-    kapt libs.google.hilt.compiler
+    implementation libs.androidx.multidex
+    ksp(libs.google.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     // Room
     implementation(libs.androidx.room.runtime)
