@@ -91,6 +91,11 @@ dependencies {
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.play.services.auth)
 
+    // Icons
+    implementation("androidx.compose.material:material-icons-core:1.6.5") // Dependencia base (normalmente ya está)
+    implementation("androidx.compose.material:material-icons-extended:1.6.5")
+    // ¡Añade o verifica esta! Revisa la última versión
+
     // Timber
     implementation(libs.timber)
     // Serialization
