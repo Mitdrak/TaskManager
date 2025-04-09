@@ -1,6 +1,5 @@
 package com.example.taskmanager.presentation.screens.login
 
-import com.example.taskmanager.R
 import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,11 +17,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -44,11 +41,13 @@ import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.taskmanager.R
 import com.example.taskmanager.presentation.common.theme.TaskManagerTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen() {
+fun LoginScreen(viewModel: LoginViewModel = hiltViewModel()) {
     val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
@@ -56,7 +55,8 @@ fun LoginScreen() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(it),
+                .padding(it)
+                .padding(horizontal = 8.dp),
         ) {
             Spacer(modifier = Modifier.height(100.dp))
             Text(
@@ -161,6 +161,26 @@ fun LoginScreen() {
             GoogleLoginButton(onClick = { /*TODO*/ })
             Spacer(modifier = Modifier.height(8.dp))
             FacebookLoginButton(onClick = { /*TODO*/ })
+            Spacer(modifier = Modifier.weight(1f))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Text(text = "Don't have an account?",
+                    fontSize = 18.sp,
+                    fontWeight = Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .clickable { /*TODO*/ })
+                Text(text = " Sign up",
+                    fontSize = 18.sp,
+                    fontWeight = Bold,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .clickable { /*TODO*/ })
+            }
         }
     }
 }
@@ -177,20 +197,19 @@ fun GradientOutlinedButton(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp)) // Rounded corners
+            .fillMaxWidth()
+            .height(50.dp) // Height of the button
             .background(Brush.linearGradient(gradientColors)) // Gradient background
             .border(
-                width = 1.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(12.dp)
+                width = 1.dp, color = borderColor, shape = RoundedCornerShape(12.dp)
             )
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp), // Padding inside the button
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = text,
-            color = textColor,
-            style = MaterialTheme.typography.labelLarge
+            text = text, fontSize = 18.sp, color = textColor, style = MaterialTheme.typography
+                .labelLarge
         )
     }
 }
@@ -205,11 +224,10 @@ fun LoginButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
             horizontal = 16.dp,
         ),
         gradientColors = listOf(
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.secondary
+            MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary
         ),
         text = "Log in",
-        borderColor = TODO(),
+        borderColor = MaterialTheme.colorScheme.primary,
     )
 
 }
