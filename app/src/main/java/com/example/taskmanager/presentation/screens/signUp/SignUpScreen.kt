@@ -1,4 +1,4 @@
-package com.example.taskmanager.presentation.screens.login
+package com.example.taskmanager.presentation.screens.signUp
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
@@ -47,14 +47,14 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.taskmanager.R
 import com.example.taskmanager.presentation.common.theme.TaskManagerTheme
-import com.example.taskmanager.presentation.screens.login.state.LoginUiEvent
+import com.example.taskmanager.presentation.screens.signUp.state.SignUpUiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    onRegisterClick: () -> Unit,
-    viewModel: LoginViewModel = hiltViewModel()
+fun SignUpScreen(
+    onRegisterSuccess: () -> Unit = {},
+    onLoginClick: () -> Unit = {},
+    viewModel: SignUpViewModel = hiltViewModel()
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val loginState by viewModel.state.collectAsState()
@@ -66,18 +66,17 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(it)
-                .background(MaterialTheme.colorScheme.background)
                 .padding(horizontal = 8.dp),
         ) {
             Spacer(modifier = Modifier.height(100.dp))
             Text(
-                text = "Log in to your account✨",
+                text = "Create an account✨",
                 fontSize = 35.sp,
                 fontWeight = Bold,
                 modifier = Modifier.padding(start = 16.dp)
             )
             Text(
-                text = "Welcome back! Please enter your details.",
+                text = "Please enter your details.",
                 fontSize = 25.sp,
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.padding(start = 16.dp)
@@ -89,7 +88,7 @@ fun LoginScreen(
             )
             OutlinedTextField(
                 value = loginState.emailOrMobile,
-                onValueChange = { viewModel.onUiEvent(LoginUiEvent.EmailOrMobileChanged(it)) },
+                onValueChange = { viewModel.onUiEvent(SignUpUiEvent.EmailOrMobileChanged(it)) },
                 placeholder = { Text(text = "Enter your email", fontSize = 18.sp) },
                 leadingIcon = {
                     Icon(
@@ -111,7 +110,7 @@ fun LoginScreen(
             )
             OutlinedTextField(
                 value = loginState.password,
-                onValueChange = { viewModel.onUiEvent(LoginUiEvent.PasswordChanged(it)) },
+                onValueChange = { viewModel.onUiEvent(SignUpUiEvent.PasswordChanged(it)) },
                 placeholder = {
                     Text(
                         text = "Enter your password", fontSize = 18.sp,
@@ -150,28 +149,16 @@ fun LoginScreen(
                         onCheckedChange = {},
                     )
                     Text(
-                        text = "Remember me",
+                        text = "Must be at least 8 characters",
                         fontSize = 18.sp,
                     )
                 }
-                Text(
-                    text = "Forgot Password?",
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = RoundedCornerShape(15.dp)
-                        )
-                        .padding(8.dp)
-                )
             }
             Spacer(modifier = Modifier.height(16.dp))
 
             GradientOutlinedButton(
                 onClick = {
-                    viewModel.onUiEvent(LoginUiEvent.Submit)
+                    viewModel.onUiEvent(SignUpUiEvent.SignUp)
                 },
                 modifier = Modifier.padding(
                     horizontal = 16.dp,
@@ -179,7 +166,7 @@ fun LoginScreen(
                 gradientColors = listOf(
                     MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary
                 ),
-                text = "Log in",
+                text = "Sign Up",
                 borderColor = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -191,20 +178,20 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
             ) {
-                Text(text = "Don't have an account?",
+                Text(text = "Already have an account?",
                     fontSize = 18.sp,
                     fontWeight = Bold,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .padding(bottom = 16.dp)
                         .clickable { /*TODO*/ })
-                Text(text = " Sign up",
+                Text(text = "Log in",
                     fontSize = 18.sp,
                     fontWeight = Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier
                         .padding(bottom = 16.dp)
-                        .clickable { onRegisterClick() })
+                        .clickable { onLoginClick() })
             }
         }
     }
@@ -217,7 +204,7 @@ fun GradientOutlinedButton(
     text: String,
     gradientColors: List<Color>,
     borderColor: Color = Color.White,
-    textColor: Color = MaterialTheme.colorScheme.onPrimary,
+    textColor: Color = Color.White,
 ) {
     Box(
         modifier = modifier
@@ -233,29 +220,10 @@ fun GradientOutlinedButton(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = text,
-            fontSize = 18.sp,
-            color = textColor,
-            style = MaterialTheme.typography.labelLarge
+            text = text, fontSize = 18.sp, color = textColor, style = MaterialTheme.typography
+                .labelLarge
         )
     }
-}
-
-
-@Composable
-fun LoginButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
-
-    GradientOutlinedButton(
-        onClick = { onClick },
-        modifier = Modifier.padding(
-            horizontal = 16.dp,
-        ),
-        gradientColors = listOf(
-            MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary
-        ),
-        text = "Log in",
-    )
-
 }
 
 @Composable
@@ -278,9 +246,8 @@ fun GoogleLoginButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Log in with Google",
+                text = "Sign Up with Google",
                 fontSize = 18.sp,
-                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -306,9 +273,8 @@ fun FacebookLoginButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Log in with Facebook",
+                text = "Sign Up with Facebook",
                 fontSize = 18.sp,
-                color = MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -321,6 +287,6 @@ fun FacebookLoginButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
 @Composable
 fun LoginScreenPreview() {
     TaskManagerTheme {
-
+        SignUpScreen()
     }
 }

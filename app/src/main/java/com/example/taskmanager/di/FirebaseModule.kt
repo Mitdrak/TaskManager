@@ -1,5 +1,7 @@
 package com.example.taskmanager.di
 
+import com.example.taskmanager.data.repository.AuthRepositoryImpl
+import com.example.taskmanager.domain.repository.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
 import dagger.Module
 import dagger.Provides
@@ -15,5 +17,13 @@ object FirebaseModule {
     @Singleton
     fun provideFirebaseAuth(): FirebaseAuth {
         return FirebaseAuth.getInstance()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAuthRepository(
+        firebaseAuth: FirebaseAuth
+    ): AuthRepository {
+        return AuthRepositoryImpl(firebaseAuth)
     }
 }

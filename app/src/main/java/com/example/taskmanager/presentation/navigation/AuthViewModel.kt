@@ -29,19 +29,12 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             firebaseAuth.addAuthStateListener { auth ->
                 if (auth.currentUser != null) {
-                    Timber.d("Usuario autenticado: ${auth.currentUser?.email}")
+                    Timber.d("Usuario autenticado A: ${auth.currentUser?.email}")
                     _authState.value = AuthState.AUTHENTICATED
                 } else {
                     Timber.w("Usuario no autenticado")
                     _authState.value = AuthState.UNAUTHENTICATED
                 }
-            }
-            if (firebaseAuth.currentUser != null) {
-                Timber.d("Usuario autenticado: ${firebaseAuth.currentUser?.email}")
-                _authState.value = AuthState.AUTHENTICATED
-            } else {
-                Timber.w("Usuario no autenticado")
-                _authState.value = AuthState.UNAUTHENTICATED
             }
         }
     }

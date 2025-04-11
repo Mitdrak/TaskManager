@@ -27,6 +27,7 @@ hilt = "2.52" # Use the latest version of Hilt
 agp = "8.7.2"
 playServicesAuth = "21.3.0"
 multidex = "2.0.1"
+googleFonts = "1.7.8"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
@@ -45,6 +46,7 @@ androidx-ui = { module = "androidx.compose.ui:ui" }
 androidx-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
 androidx-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 androidx-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+androidx-ui-text-google-fonts = { module = "androidx.compose.ui:ui-text-google-fonts", version.ref = "googleFonts" }
 androidx-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }

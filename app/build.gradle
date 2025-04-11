@@ -98,6 +98,10 @@ dependencies {
 
     // Timber
     implementation(libs.timber)
+
+    // Google Fonts
+    implementation(libs.androidx.ui.text.google.fonts)
+
     // Serialization
     implementation(libs.kotlinx.serialization.json)
 
