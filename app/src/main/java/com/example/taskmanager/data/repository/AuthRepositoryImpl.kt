@@ -4,6 +4,7 @@ import com.example.taskmanager.domain.model.AuthUser
 import com.example.taskmanager.domain.repository.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -15,7 +16,8 @@ import javax.inject.Singleton
 
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
-    private val firebaseAuth: FirebaseAuth
+    private val firebaseAuth: FirebaseAuth,
+    private val firebaseFirestore: FirebaseFirestore
 ) : AuthRepository {
     override fun observeAuthState(): Flow<AuthUser?> = callbackFlow {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -49,8 +51,22 @@ class AuthRepositoryImpl @Inject constructor(
     ): Result<Unit> {
         return try {
             Timber.d("Intentando registrarse con $email")
-            firebaseAuth.createUserWithEmailAndPassword(email, password).await()
-            Result.success(Unit)
+            val authResult = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
+            val newUserId = authResult.user?.uid
+            if (newUserId != null) {
+                // Guardar el usuario en Firestore
+                val userData = mapOf(
+                    "email" to email,
+                    "name" to "Anonymous",
+                    "createdAt" to System.currentTimeMillis()
+                )
+                firebaseFirestore.collection("users").document(newUserId).set(userData).await()
+                Timber.d("Usuario registrado y guardado en Firestore: $newUserId")
+                Result.success(Unit)
+            } else {
+                Timber.e("Error al obtener el ID del usuario después de registrarse")
+                Result.failure(Exception("Error al obtener el ID del usuario después de registrarse"))
+            }
         } catch (e: Exception) {
             Timber.e("Error al registrarse: ${e.message}")
             Result.failure(mapFirebaseException(e))
