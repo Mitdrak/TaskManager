@@ -30,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -58,6 +59,12 @@ fun SignUpScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val loginState by viewModel.state.collectAsState()
+
+    LaunchedEffect(loginState.isSignUpSuccessful) {
+        if (loginState.isSignUpSuccessful) {
+            onRegisterSuccess()
+        }
+    }
 
 
     Scaffold(
@@ -178,14 +185,16 @@ fun SignUpScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
             ) {
-                Text(text = "Already have an account?",
+                Text(
+                    text = "Already have an account?",
                     fontSize = 18.sp,
                     fontWeight = Bold,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .padding(bottom = 16.dp)
                         .clickable { /*TODO*/ })
-                Text(text = "Log in",
+                Text(
+                    text = "Log in",
                     fontSize = 18.sp,
                     fontWeight = Bold,
                     color = MaterialTheme.colorScheme.secondary,

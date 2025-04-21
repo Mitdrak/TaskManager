@@ -8,51 +8,37 @@ import com.example.taskmanager.presentation.screens.home.HomeScreen
 import com.example.taskmanager.presentation.screens.login.LoginScreen
 import com.example.taskmanager.presentation.screens.signUp.SignUpScreen
 
-fun NavGraphBuilder.authNavGraph(navController: NavHostController) {
+fun NavGraphBuilder.authNavGraph(
+    navController: NavHostController, onNavigateToMainGraph: () -> Unit
+) {
     navigation(
-        route = Graph.AUTHENTICATION, startDestination = Screen.Login.route
+        route = Graph.AUTHENTICATION, startDestination = Screen.Login.route,
     ) {
         composable(
             route = Screen.Login.route
         ) {
-            LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate(Graph.MAIN) {
-                        popUpTo(Graph.AUTHENTICATION) {
-                            inclusive = true
-                        }
-                    }
-                },
-                onRegisterClick = {
-                    navController.navigate(Screen.Register.route)
-                }
-            )
+            LoginScreen(onLoginSuccess = onNavigateToMainGraph, onRegisterClick = {
+                navController.navigate(Screen.Register.route)
+            })
         }
         composable(
             route = Screen.Register.route
         ) {
-            SignUpScreen(
-                onRegisterSuccess = {
-                    navController.navigate(Graph.MAIN) {
-                        popUpTo(Graph.AUTHENTICATION) {
-                            inclusive = true
-                        }
+            SignUpScreen(onRegisterSuccess = onNavigateToMainGraph, onLoginClick = {
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(Graph.AUTHENTICATION) {
+                        inclusive = true
                     }
-                },
-                onLoginClick = {
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(Graph.AUTHENTICATION) {
-                            inclusive = true
-                        }
-                    }
-
                 }
-            )
+
+            })
         }
     }
 }
 
-fun NavGraphBuilder.mainNavGraph(navController: NavHostController) {
+fun NavGraphBuilder.mainNavGraph(
+    navController: NavHostController, onNavigateToAuthGraph: () -> Unit
+) {
     navigation(
         route = Graph.MAIN, startDestination = Screen.Home.route
     ) {

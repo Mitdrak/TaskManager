@@ -5,6 +5,7 @@ data class SignUpState(
     val password: String = "",
     val errorState: SignUpErrorState = SignUpErrorState(),
     val isLoading: Boolean = false,
+    val processingSignUp: Boolean = false,
     val isSignUpSuccessful: Boolean = false,
 )
 
