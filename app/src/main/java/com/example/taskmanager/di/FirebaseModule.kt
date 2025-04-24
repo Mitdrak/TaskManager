@@ -1,7 +1,10 @@
 package com.example.taskmanager.di
 
 import com.example.taskmanager.data.repository.AuthRepositoryImpl
+import com.example.taskmanager.data.repository.TaskRepositoryImpl
+import com.example.taskmanager.domain.manager.UserSessionManager
 import com.example.taskmanager.domain.repository.AuthRepository
+import com.example.taskmanager.domain.repository.TaskRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
@@ -29,9 +32,23 @@ object FirebaseModule {
     @Provides
     @Singleton
     fun provideAuthRepository(
-        firebaseAuth: FirebaseAuth,
-        firebaseFirestore: FirebaseFirestore
+        firebaseAuth: FirebaseAuth, firebaseFirestore: FirebaseFirestore
     ): AuthRepository {
         return AuthRepositoryImpl(firebaseAuth, firebaseFirestore)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserSessionManager(authRepository: AuthRepository): UserSessionManager =
+        UserSessionManager(
+            authRepository = authRepository
+        )
+
+    @Provides
+    @Singleton
+    fun provideTaskRepository(
+        firebaseFirestore: FirebaseFirestore,
+    ): TaskRepository {
+        return TaskRepositoryImpl(firebaseFirestore)
     }
 }

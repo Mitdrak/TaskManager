@@ -27,7 +27,7 @@ class AuthViewModel @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val firebaseFirestore: FirebaseFirestore
 ) : ViewModel() {
-    private val _authState = MutableStateFlow<GlobalAuthState>(GlobalAuthState.UNKNOWN)
+    private val _authState = MutableStateFlow<GlobalAuthState>(GlobalAuthState.UNAUTHENTICATED)
     val authState: StateFlow<GlobalAuthState> = _authState
 
 

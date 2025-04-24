@@ -8,5 +8,6 @@ interface AuthRepository {
     fun observeAuthState(): Flow<AuthUser?>
     suspend fun loginWithEmailPassword(email: String, password: String): Result<Unit>
     suspend fun signUpWithEmailPassword(email: String, password: String): Result<Unit>
+    suspend fun getCurrentUser(): Flow<AuthUser?>
     suspend fun logout(): Result<Unit>
 }

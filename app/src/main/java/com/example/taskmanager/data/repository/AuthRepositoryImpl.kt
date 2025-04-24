@@ -73,6 +73,16 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getCurrentUser(): Flow<AuthUser?> {
+        return callbackFlow {
+            val currentUser = firebaseAuth.currentUser
+            Timber.d("Usuario actual: ${currentUser?.email}")
+            trySend(currentUser?.toDomain())
+            // Limpiar el flow cuando se cierra
+            awaitClose { }
+        }
+    }
+
     override suspend fun logout(): Result<Unit> {
         TODO("Not yet implemented")
     }

@@ -30,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -48,6 +49,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.taskmanager.R
 import com.example.taskmanager.presentation.common.theme.TaskManagerTheme
 import com.example.taskmanager.presentation.screens.login.state.LoginUiEvent
+import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +61,12 @@ fun LoginScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val loginState by viewModel.state.collectAsState()
 
-
+    LaunchedEffect(loginState.isLoginSuccessful) {
+        if (loginState.isLoginSuccessful) {
+            Timber.d("Login successful")
+            onLoginSuccess()
+        }
+    }
     Scaffold(
     ) {
         Column(
@@ -191,14 +198,16 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
             ) {
-                Text(text = "Don't have an account?",
+                Text(
+                    text = "Don't have an account?",
                     fontSize = 18.sp,
                     fontWeight = Bold,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .padding(bottom = 16.dp)
                         .clickable { /*TODO*/ })
-                Text(text = " Sign up",
+                Text(
+                    text = " Sign up",
                     fontSize = 18.sp,
                     fontWeight = Bold,
                     color = MaterialTheme.colorScheme.onSurface,

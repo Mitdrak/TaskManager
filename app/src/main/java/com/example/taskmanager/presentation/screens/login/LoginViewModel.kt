@@ -35,7 +35,7 @@ class LoginViewModel @Inject constructor(
                 Timber.d("Auth state changed: $authUser")
                 _loginState.update {
                     it.copy(
-                        isLoginSuccessful = authUser != null,
+                        isLoginSuccessful = true,
                         isLoading = false
                     )
                 }
@@ -73,6 +73,7 @@ class LoginViewModel @Inject constructor(
                         password = "123123"
                     )
                     result.onSuccess {
+                        Timber.d("Login successful")
                         _loginState.update {
                             it.copy(isLoginSuccessful = true, isLoading = false)
                         }

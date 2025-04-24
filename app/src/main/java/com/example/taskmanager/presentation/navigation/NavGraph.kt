@@ -4,6 +4,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import com.example.taskmanager.presentation.screens.calendar.CalendarScreen
 import com.example.taskmanager.presentation.screens.home.HomeScreen
 import com.example.taskmanager.presentation.screens.login.LoginScreen
 import com.example.taskmanager.presentation.screens.signUp.SignUpScreen
@@ -45,18 +46,26 @@ fun NavGraphBuilder.mainNavGraph(
         composable(
             route = Screen.Home.route
         ) {
-            HomeScreen()
+            HomeScreen(onSwipe = {
+                navController.navigate(Screen.Calendar.route) {
+                    popUpTo(Graph.MAIN) {
+                        inclusive = true
+                    }
+                }
+            })
         }
-
         composable(
-            route = Screen.HabitDetails.route
+            route = Screen.Calendar.route
         ) {
-            // HabitDetailsScreen(navController)
-        }
-        composable(
-            route = Screen.Settings.route
-        ) {
-            // SettingsScreen(navController)
+            CalendarScreen(onSwipe = {
+                navController.navigate(Screen.Home.route) {
+                    popUpTo(Graph.MAIN) {
+                        inclusive = true
+                    }
+                }
+            })
         }
     }
+
+
 }
