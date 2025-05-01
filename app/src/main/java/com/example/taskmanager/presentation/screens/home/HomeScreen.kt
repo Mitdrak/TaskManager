@@ -31,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +47,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.taskmanager.domain.model.Task
+import com.example.taskmanager.domain.usecase.task.addTaskUseCase
 import com.example.taskmanager.presentation.common.theme.TaskManagerTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -54,10 +58,15 @@ import java.util.Locale
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onSwipe: () -> Unit, viewModel: HomeViewModel = hiltViewModel()) {
+fun HomeScreen(
+    onSwipe: () -> Unit,
+    viewModel: HomeViewModel = hiltViewModel()
+) {
     val snackbarHostState = remember { SnackbarHostState() }
     val swipeThreshold = 300f
     var offsetX by remember { mutableFloatStateOf(0f) }
+    val tasks : List<Task> by viewModel.tasks.collectAsStateWithLifecycle()
+    val tasksCompleted : List<Task> by viewModel.tasksCompleted.collectAsStateWithLifecycle()
 
 
     Scaffold(
@@ -75,10 +84,7 @@ fun HomeScreen(onSwipe: () -> Unit, viewModel: HomeViewModel = hiltViewModel()) 
                     .clickable(
                         onClick = {
                             println("Add")
-                            viewModel.addNewTask(
-                                "NUEVA",
-                                "TAREAAAA"
-                            )
+                            viewModel.addNewTask()
                         },
                     )
             )
@@ -266,7 +272,7 @@ fun HomeScreen(onSwipe: () -> Unit, viewModel: HomeViewModel = hiltViewModel()) 
                         bottom = 16.dp
                     )
             ) {
-                items(10) {
+                items(tasks.size) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -280,13 +286,13 @@ fun HomeScreen(onSwipe: () -> Unit, viewModel: HomeViewModel = hiltViewModel()) 
                         )
                         Column {
                             Text(
-                                text = "Task $it",
+                                text = "Task ${tasks[it].title}",
                                 fontSize = 20.sp,
                                 style = MaterialTheme.typography.headlineLarge,
                                 fontWeight = Bold,
                             )
                             Text(
-                                text = "Description of task $it",
+                                text = "Description of task ${tasks[it].description}",
                                 fontSize = 16.sp,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
@@ -309,7 +315,7 @@ fun HomeScreen(onSwipe: () -> Unit, viewModel: HomeViewModel = hiltViewModel()) 
                         bottom = 16.dp
                     )
             ) {
-                items(10) {
+                items(tasksCompleted.size) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -322,13 +328,13 @@ fun HomeScreen(onSwipe: () -> Unit, viewModel: HomeViewModel = hiltViewModel()) 
                         )
                         Column {
                             Text(
-                                text = "Task $it",
+                                text = "Task ${tasksCompleted[it].title}",
                                 fontSize = 20.sp,
                                 style = MaterialTheme.typography.headlineLarge,
                                 fontWeight = Bold,
                             )
                             Text(
-                                text = "Description of task $it",
+                                text = "Description of task ${tasksCompleted[it].description}",
                                 fontSize = 16.sp,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
@@ -347,7 +353,8 @@ fun GradientLinearProgressBar(
     modifier: Modifier = Modifier
         .fillMaxWidth()
         .height(8.dp)
-        .clip(RoundedCornerShape(50)), gradientColors: List<Color>
+        .clip(RoundedCornerShape(50)),
+    gradientColors: List<Color>
 ) {
     Canvas(modifier = modifier.background(Color.LightGray.copy(alpha = 0.3f))) {
         val width = size.width * progress
@@ -367,6 +374,8 @@ fun GradientLinearProgressBar(
 @Composable
 fun HomeScreenPreview() {
     TaskManagerTheme {
-        HomeScreen(onSwipe = {})
+        HomeScreen(
+            onSwipe = { },
+        )
     }
 }

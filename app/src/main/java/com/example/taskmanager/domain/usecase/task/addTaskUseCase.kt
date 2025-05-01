@@ -6,18 +6,10 @@ import javax.inject.Inject
 
 class addTaskUseCase @Inject constructor(private val taskRepository: TaskRepository) {
     suspend operator fun invoke(
-        userId: String,
-        title: String,
-        description: String,
-        completed: Boolean = false,
+        task: Task
     ): Result<Unit> {
         return taskRepository.addTask(
-            Task(
-                userId = userId,
-                title = title,
-                description = description,
-                completed = completed
-            )
+            task
         )
     }
 }

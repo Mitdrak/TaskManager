@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,7 +18,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.rememberScrollState
@@ -34,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,15 +46,22 @@ import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.taskmanager.domain.model.Task
 import com.example.taskmanager.presentation.common.theme.TaskManagerTheme
+import com.example.taskmanager.presentation.screens.calendar.state.CalendarUiEvent
 import java.time.LocalDate
 
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CalendarScreen(onSwipe: () -> Unit, modifier: Modifier = Modifier) {
-
+fun CalendarScreen(
+    onSwipe: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: CalendarViewModel = hiltViewModel()
+) {
+    val taskState = viewModel.tasks.collectAsState().value
     val swipeThreshold = 100f
     var offsetX by remember { mutableStateOf(0f) }
 
@@ -155,7 +161,12 @@ fun CalendarScreen(onSwipe: () -> Unit, modifier: Modifier = Modifier) {
                                 color = backgroundColor,
                                 shape = RoundedCornerShape(16.dp)
                             )
-                            .clickable { selectedDate = date },
+                            .clickable {
+                                selectedDate = date
+                                viewModel.onUiEvent(
+                                    CalendarUiEvent.ChangeDate(date)
+                                )
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Column {
@@ -218,32 +229,8 @@ fun CalendarScreen(onSwipe: () -> Unit, modifier: Modifier = Modifier) {
                             color = MaterialTheme.colorScheme.onPrimary,
                         )
                     }
-                    val schedule = mapOf(
-                        "10:00 AM" to "Meeting with boss",
-                        "11:00 AM" to "Hang out with girls",
-                        "2:00 PM" to "Workout",
-                        "4:00 PM" to "Code time!"
-                    )
 
-                    /*DailySchedule(events = schedule)*/
-                    val events = listOf(
-                        Event(
-                            "Meeting with boss",
-                            startHour = 3,
-                            endHour = 11
-                        ),
-                        Event(
-                            "Hang out with girls",
-                            startHour = 12,
-                            endHour = 13
-                        ),
-                        Event(
-                            "Workout",
-                            startHour = 14,
-                            endHour = 16
-                        )
-                    )/*DailySchedule1(events = events)*/
-                    DailySchedule(events = events)
+                    DailySchedule(events = taskState)
 
                 }
             }
@@ -252,95 +239,13 @@ fun CalendarScreen(onSwipe: () -> Unit, modifier: Modifier = Modifier) {
 
 }
 
-
-data class Event(
-    val title: String, val startHour: Int, // 24-hour format, e.g. 14
-    val endHour: Int    // e.g. 16
-)
-
-@SuppressLint("DefaultLocale")
-@Composable
-fun DailySchedule1(
-    events: List<Event>
-) {
-    val hours = (8..20).toList() // 8AM to 8PM
-
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
-        items(hours.size) { hour ->
-            val event = events.find { hour >= it.startHour && hour < it.endHour }
-
-            val amPm = if (hour < 12) "AM" else "PM"
-            val displayHour = if (hour == 12 || hour == 0) 12 else hour % 12
-            val label = String.format(
-                "%d:00 %s",
-                displayHour,
-                amPm
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                // Time label
-                Text(
-                    text = label,
-                    modifier = Modifier.width(80.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = Bold
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // If it's the event start hour, draw it
-                if (event != null && hour == event.startHour) {
-                    val duration = event.endHour - event.startHour
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height((duration * 60).dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                            .padding(8.dp),
-                        contentAlignment = Alignment.TopStart
-                    ) {
-                        Text(
-                            text = event.title,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            fontWeight = Bold
-                        )
-                    }
-                } else if (event == null) {
-                    // Empty slot
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                    )
-                }
-            }
-        }
-    }
-}
 
 @SuppressLint(
     "UnusedBoxWithConstraintsScope",
     "DefaultLocale"
 )
 @Composable
-fun DailySchedule(events: List<Event>) {
+fun DailySchedule(events: List<Task>) {
     val startHour = 1
     val endHour = 24
     val hourHeightDp = 60.dp
@@ -391,8 +296,8 @@ fun DailySchedule(events: List<Event>) {
 
             // Overlay events
             events.forEach { event ->
-                val topOffset = hourHeightDp * (event.startHour - startHour)
-                val eventHeight = hourHeightDp * (event.endHour - event.startHour)
+                val topOffset = hourHeightDp * (event.timeStart.toInt() - startHour)
+                val eventHeight = hourHeightDp * (event.timeEnd.toInt() - event.timeStart.toInt())
 
                 Box(
                     modifier = Modifier
@@ -404,13 +309,24 @@ fun DailySchedule(events: List<Event>) {
                         .fillMaxWidth()
                         .height(eventHeight)
                         .clip(
-                            if (event.startHour == event.endHour) {
+                            if (event.timeStart.toInt() == event.timeEnd.toInt()) {
                                 RoundedCornerShape(0.dp)
                             } else {
                                 RoundedCornerShape(16.dp)
                             }
                         )
-                        .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f))
+                        //RANDOM BACKGROUND COLOR
+                        .background(
+                            Color(
+                                android.graphics.Color.argb(
+                                    255,
+                                    (0..255).random(),
+                                    (0..255).random(),
+                                    (0..255).random()
+                                )
+                            )
+                        )
+                        /*.background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f))*/
                         .padding(8.dp)
                 ) {
                     Text(
