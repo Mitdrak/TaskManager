@@ -33,11 +33,13 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             observeAuthStateUseCase().collect { authUser ->
                 Timber.d("Auth state changed: $authUser")
-                _loginState.update {
-                    it.copy(
-                        isLoginSuccessful = true,
-                        isLoading = false
-                    )
+                if (authUser != null) {
+                    _loginState.update {
+                        it.copy(
+                            isLoginSuccessful = true,
+                            isLoading = false
+                        )
+                    }
                 }
             }
         }
@@ -75,7 +77,10 @@ class LoginViewModel @Inject constructor(
                     result.onSuccess {
                         Timber.d("Login successful")
                         _loginState.update {
-                            it.copy(isLoginSuccessful = true, isLoading = false)
+                            it.copy(
+                                isLoginSuccessful = true,
+                                isLoading = false
+                            )
                         }
                     }.onFailure {
                         _loginState.update {

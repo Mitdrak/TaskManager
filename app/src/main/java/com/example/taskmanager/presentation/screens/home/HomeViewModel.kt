@@ -6,9 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.taskmanager.domain.manager.UserSessionManager
 import com.example.taskmanager.domain.model.Task
+import com.example.taskmanager.domain.usecase.auth.LogOutUseCase
 import com.example.taskmanager.domain.usecase.task.addTaskUseCase
 import com.example.taskmanager.domain.usecase.task.getTasksUseCase
 import com.example.taskmanager.domain.usecase.task.observeTasksForDateUseCase
+import com.example.taskmanager.domain.usecase.task.updateTaskUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +27,8 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val addTaskUseCase: addTaskUseCase,
+    private val logOutUseCase: LogOutUseCase,
+    private val updateTaskUseCase: updateTaskUseCase,
     private val getTaskUseCase: getTasksUseCase,
     private val observeTasksForDateUseCase: observeTasksForDateUseCase,
     private val userSessionManager: UserSessionManager
@@ -39,38 +43,6 @@ class HomeViewModel @Inject constructor(
         observeTasksForDate()
     }
 
-
-    fun addNewTask() {
-        viewModelScope.launch {
-            userSessionManager.userIdFlow.collect { userId ->
-                val task1 = Task(
-                    userId = userId ?: "",
-                    title = "Meeting with boss",
-                    description = "Discuss project updates",
-                    timeStart = "3",
-                    timeEnd = "11"
-                )
-                val task2 = Task(
-                    userId = userId ?: "",
-                    title = "Hang out with friend",
-                    description = "Catch up over coffee",
-                    timeStart = "12",
-                    timeEnd = "13"
-                )
-                val task3 = Task(
-                    userId = userId ?: "",
-                    title = "Workout",
-                    description = "Gym session",
-                    timeStart = "14",
-                    timeEnd = "16"
-                )
-
-                if (userId != null) {
-                    addTaskUseCase(task1)
-                }
-            }
-        }
-    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun observeTasksForDate() {
@@ -110,6 +82,20 @@ class HomeViewModel @Inject constructor(
                     Timber.d("Tasks: $result")
                 }
             }
+        }
+    }
+
+    fun updateTask(task: Task) {
+        viewModelScope.launch {
+            updateTaskUseCase(task)
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            val result = logOutUseCase()
+            Timber.d("Logout result: $result")
+
         }
     }
 

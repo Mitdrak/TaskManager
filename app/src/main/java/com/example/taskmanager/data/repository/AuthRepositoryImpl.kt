@@ -37,7 +37,10 @@ class AuthRepositoryImpl @Inject constructor(
     ): Result<Unit> {
         return try {
             Timber.d("Intentando iniciar sesión con $email")
-            firebaseAuth.signInWithEmailAndPassword(email, password).await()
+            firebaseAuth.signInWithEmailAndPassword(
+                email,
+                password
+            ).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Timber.e("Error al iniciar sesión: ${e.message}")
@@ -51,7 +54,10 @@ class AuthRepositoryImpl @Inject constructor(
     ): Result<Unit> {
         return try {
             Timber.d("Intentando registrarse con $email")
-            val authResult = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
+            val authResult = firebaseAuth.createUserWithEmailAndPassword(
+                email,
+                password
+            ).await()
             val newUserId = authResult.user?.uid
             if (newUserId != null) {
                 // Guardar el usuario en Firestore
@@ -84,11 +90,20 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logout(): Result<Unit> {
-        TODO("Not yet implemented")
+        return try {
+            firebaseAuth.signOut()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Timber.e("Error al cerrar sesión: ${e.message}")
+            Result.failure(mapFirebaseException(e))
+        }
     }
 
     private fun FirebaseUser.toDomain(): AuthUser {
-        return AuthUser(uid = this.uid, email = this.email)
+        return AuthUser(
+            uid = this.uid,
+            email = this.email
+        )
     }
 
     private fun mapFirebaseException(e: Exception): Exception {

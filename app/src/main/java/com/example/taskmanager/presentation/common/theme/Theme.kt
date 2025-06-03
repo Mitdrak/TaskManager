@@ -212,7 +212,10 @@ data class ColorFamily(
 )
 
 val unspecified_scheme = ColorFamily(
-    Color.Unspecified, Color.Unspecified, Color.Unspecified, Color.Unspecified
+    Color.Unspecified,
+    Color.Unspecified,
+    Color.Unspecified,
+    Color.Unspecified
 )
 
 @Composable
@@ -235,8 +238,14 @@ fun TaskManagerTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            window.statusBarColor = if (darkTheme) Color.Black.toArgb() else Color.White.toArgb()
+            window.navigationBarColor = colorScheme.background.toArgb() // here change the color
+
+
+            WindowCompat.getInsetsController(
+                window,
+                view
+            ).isAppearanceLightStatusBars = !darkTheme
         }
     }
 

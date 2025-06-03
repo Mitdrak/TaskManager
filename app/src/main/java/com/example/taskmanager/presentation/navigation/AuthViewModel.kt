@@ -27,7 +27,7 @@ class AuthViewModel @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val firebaseFirestore: FirebaseFirestore
 ) : ViewModel() {
-    private val _authState = MutableStateFlow<GlobalAuthState>(GlobalAuthState.UNAUTHENTICATED)
+    private val _authState = MutableStateFlow<GlobalAuthState>(GlobalAuthState.UNKNOWN)
     val authState: StateFlow<GlobalAuthState> = _authState
 
 
@@ -45,6 +45,12 @@ class AuthViewModel @Inject constructor(
                     Timber.d(
                         "AuthViewModel: Estado GLOBAL = AUTENTICADO (Usuario: " +
                                 "${authUser.currentUser?.email})"
+                    )
+                    _authState.value = GlobalAuthState.AUTHENTICATED(
+                        AuthUser(
+                            authUser.currentUser?.uid.toString(),
+                            authUser.currentUser?.email
+                        )
                     )
                     /*_authState.value =
                         GlobalAuthState.AUTHENTICATED(

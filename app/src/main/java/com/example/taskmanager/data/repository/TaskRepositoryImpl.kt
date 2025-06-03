@@ -121,4 +121,15 @@ class TaskRepositoryImpl @Inject constructor(
             awaitClose { listenerRegistration.remove() }
         }
     }
+
+    override suspend fun updateTask(task: Task): Result<Unit> {
+        return try {
+            Timber.d("Actualizando tarea: $task")
+            firebaseFirestore.collection("users").document(task.userId).collection("tasks").document(task.taskId).set(task)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Timber.e("Error al actualizar la tarea: ${e.message}")
+            Result.failure(e)
+        }
+    }
 }

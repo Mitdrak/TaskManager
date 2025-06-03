@@ -24,6 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -51,6 +52,7 @@ import com.example.taskmanager.domain.model.Task
 import com.example.taskmanager.presentation.common.theme.TaskManagerTheme
 import com.example.taskmanager.presentation.screens.calendar.state.CalendarUiEvent
 import java.time.LocalDate
+import java.time.LocalTime
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -67,6 +69,8 @@ fun CalendarScreen(
 
     val today = LocalDate.now()
     val totalDaysInMonth = today.lengthOfMonth()
+    val month = today.month
+    val year = today.year
 
     // From today to end of month
     val remainingDays = (today.dayOfMonth..totalDaysInMonth).map { day ->
@@ -101,7 +105,7 @@ fun CalendarScreen(
                         )
                 )
                 Text(
-                    text = "March 2023",
+                    text = "$month $year",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = Bold,
                     modifier = Modifier
@@ -111,8 +115,26 @@ fun CalendarScreen(
                 )
             }
         },
+        floatingActionButton = {
+            Icon(
+                imageVector = Icons.Outlined.Add,
+                contentDescription = "Add",
+                tint = MaterialTheme.colorScheme.onSecondary,
+                modifier = Modifier
+                    .padding(8.dp)
+                    .size(50.dp)
+                    .clip(RoundedCornerShape(50.dp))
+                    .background(MaterialTheme.colorScheme.primary)
+                    .padding(8.dp)
+                    .clickable(
+                        onClick = {
+                            println("Add clicked")
+                        },
+                    )
+            )
+        }
 
-        ) {
+    ) {
         Column(
             modifier = Modifier
                 .padding(it)
@@ -135,7 +157,7 @@ fun CalendarScreen(
                 rows = GridCells.Fixed(1),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp)
+                    .height(100.dp)
             ) {
                 items(remainingDays.size) { index ->
                     val date = remainingDays[index]
@@ -155,7 +177,7 @@ fun CalendarScreen(
                     Box(
                         modifier = Modifier
                             .padding(8.dp)
-                            .width(80.dp)
+                            .width(70.dp)
                             .height(50.dp)
                             .background(
                                 color = backgroundColor,
@@ -229,7 +251,6 @@ fun CalendarScreen(
                             color = MaterialTheme.colorScheme.onPrimary,
                         )
                     }
-
                     DailySchedule(events = taskState)
 
                 }
@@ -240,6 +261,7 @@ fun CalendarScreen(
 }
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint(
     "UnusedBoxWithConstraintsScope",
     "DefaultLocale"
@@ -284,20 +306,29 @@ fun DailySchedule(events: List<Task>) {
                             color = MaterialTheme.colorScheme.onPrimary,
                             fontWeight = Bold
                         )
-                        Divider(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(1.dp),
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-                        )
+
                     }
+                    Divider(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp),
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
+                    )
                 }
             }
 
             // Overlay events
+
             events.forEach { event ->
-                val topOffset = hourHeightDp * (event.timeStart.toInt() - startHour)
-                val eventHeight = hourHeightDp * (event.timeEnd.toInt() - event.timeStart.toInt())
+                val timeStart = LocalTime.parse(event.timeStart) // e.g., "14:30"
+                val timeEnd = LocalTime.parse(event.timeEnd)     // e.g., "16:00"
+                val startDecimal = timeStart.hour + timeStart.minute / 60f
+                val endDecimal = timeEnd.hour + timeEnd.minute / 60f
+                val topOffset = hourHeightDp * (startDecimal - startHour)
+                val eventHeight = hourHeightDp * (endDecimal - startDecimal)
+
+                /*val topOffset = hourHeightDp * (event.timeStart.toInt() - startHour)
+                val eventHeight = hourHeightDp * (event.timeEnd.toInt() - event.timeStart.toInt())*/
 
                 Box(
                     modifier = Modifier
@@ -309,7 +340,7 @@ fun DailySchedule(events: List<Task>) {
                         .fillMaxWidth()
                         .height(eventHeight)
                         .clip(
-                            if (event.timeStart.toInt() == event.timeEnd.toInt()) {
+                            if (startDecimal == endDecimal) {
                                 RoundedCornerShape(0.dp)
                             } else {
                                 RoundedCornerShape(16.dp)
@@ -324,16 +355,26 @@ fun DailySchedule(events: List<Task>) {
                                     (0..255).random(),
                                     (0..255).random()
                                 )
-                            )
-                        )
-                        /*.background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f))*/
-                        .padding(8.dp)
+                            ).copy(alpha = 0.6f)
+                        )/*.background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f))*/.padding(8.dp)
                 ) {
-                    Text(
-                        text = event.title,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        fontWeight = Bold
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp)
+                    ) {
+                        Text(
+                            text = event.title,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = Bold,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Text(
+                            text = event.description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
                 }
             }
         }
@@ -349,8 +390,9 @@ fun PreviewComp(modifier: Modifier = Modifier) {
     TaskManagerTheme {
         CalendarScreen(
             onSwipe = { },
-            modifier = modifier
-        )
+            modifier = modifier,
+
+            )
 
     }
 }

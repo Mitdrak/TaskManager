@@ -7,52 +7,74 @@ import androidx.navigation.navigation
 import com.example.taskmanager.presentation.screens.calendar.CalendarScreen
 import com.example.taskmanager.presentation.screens.home.HomeScreen
 import com.example.taskmanager.presentation.screens.login.LoginScreen
+import com.example.taskmanager.presentation.screens.newTask.NewTaskScreen
 import com.example.taskmanager.presentation.screens.signUp.SignUpScreen
 
 fun NavGraphBuilder.authNavGraph(
-    navController: NavHostController, onNavigateToMainGraph: () -> Unit
+    navController: NavHostController,
+    onNavigateToMainGraph: () -> Unit
 ) {
     navigation(
-        route = Graph.AUTHENTICATION, startDestination = Screen.Login.route,
+        route = Graph.AUTHENTICATION,
+        startDestination = Screen.Login.route,
     ) {
         composable(
             route = Screen.Login.route
         ) {
-            LoginScreen(onLoginSuccess = onNavigateToMainGraph, onRegisterClick = {
-                navController.navigate(Screen.Register.route)
-            })
+            LoginScreen(
+                onLoginSuccess = onNavigateToMainGraph,
+                onRegisterClick = {
+                    navController.navigate(Screen.Register.route)
+                })
         }
         composable(
             route = Screen.Register.route
         ) {
-            SignUpScreen(onRegisterSuccess = onNavigateToMainGraph, onLoginClick = {
-                navController.navigate(Screen.Login.route) {
-                    popUpTo(Graph.AUTHENTICATION) {
-                        inclusive = true
+            SignUpScreen(
+                onRegisterSuccess = onNavigateToMainGraph,
+                onLoginClick = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Graph.AUTHENTICATION) {
+                            inclusive = true
+                        }
                     }
-                }
 
-            })
+                })
         }
     }
 }
 
 fun NavGraphBuilder.mainNavGraph(
-    navController: NavHostController, onNavigateToAuthGraph: () -> Unit
+    navController: NavHostController,
+    onNavigateToAuthGraph: () -> Unit
 ) {
     navigation(
-        route = Graph.MAIN, startDestination = Screen.Home.route
+        route = Graph.MAIN,
+        startDestination = Screen.Home.route
     ) {
         composable(
             route = Screen.Home.route
         ) {
-            HomeScreen(onSwipe = {
-                navController.navigate(Screen.Calendar.route) {
-                    popUpTo(Graph.MAIN) {
-                        inclusive = true
+            HomeScreen(
+                onSwipe = {
+                    navController.navigate(Screen.Calendar.route) {
+                        popUpTo(Graph.MAIN) {
+                            inclusive = true
+                        }
                     }
+                },
+                navigateToNewTask = {
+                    navController.navigate(Screen.NewTask.route) {
+                        popUpTo(Graph.MAIN) {
+                            inclusive = true
+                        }
+                    }
+                },
+                navigateToLogin = {
+                    onNavigateToAuthGraph()
+
                 }
-            })
+            )
         }
         composable(
             route = Screen.Calendar.route
@@ -64,6 +86,19 @@ fun NavGraphBuilder.mainNavGraph(
                     }
                 }
             })
+        }
+        composable(
+            route = Screen.NewTask.route
+        ) {
+            NewTaskScreen(
+                navigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Graph.MAIN) {
+                            inclusive = true
+                        }
+                    }
+                }
+            )// NewTaskScreen(onBack = { navController.popBackStack() })
         }
     }
 

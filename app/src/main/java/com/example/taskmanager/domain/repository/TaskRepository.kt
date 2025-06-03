@@ -8,4 +8,5 @@ interface TaskRepository {
     suspend fun addTask(task: Task): Result<Unit>
     suspend fun getTasks(userId: String): Result<List<Task>>
     suspend fun observeTasksForDate(selectedDate: LocalDate): Flow<Result<List<Task>>>
+    suspend fun updateTask(task: Task): Result<Unit>
 }

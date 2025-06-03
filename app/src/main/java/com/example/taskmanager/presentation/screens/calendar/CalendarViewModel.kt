@@ -75,9 +75,9 @@ class CalendarViewModel @Inject constructor(
                     Timber.d("Tasks: ${result}")
                     _tasks.value = result.getOrDefault(emptyList())
                     val timestamp = _tasks.value[0].dateStart
-                    val dateStr = timestamp.toFormattedString()
-                    val timeOnlyStr = timestamp.toFormattedString("HH:mm")
-                    val dateOnlyStr = timestamp.toFormattedString("dd/MM/yyyy")
+                    val dateStr = timestamp?.toFormattedString()
+                    val timeOnlyStr = timestamp?.toFormattedString("HH:mm")
+                    val dateOnlyStr = timestamp?.toFormattedString("dd/MM/yyyy")
                     Timber.d("Formatted date: $dateStr")
                     Timber.d("Time only: $timeOnlyStr")
                     Timber.d("Date only: $dateOnlyStr")
