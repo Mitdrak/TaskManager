@@ -75,20 +75,4 @@ fun AppNavigation(
         }
     }
 
-    /*NavHost(
-        navController = navController,
-        route = Graph.ROOT,
-        startDestination = when (authState) {
-            AuthState.AUTHENTICATED -> Graph.MAIN
-            AuthState.UNAUTHENTICATED -> Graph.AUTHENTICATION
-            AuthState.UNKNOWN -> "loading_screen"
-            AuthState.AUTHENTICATING -> "loading_screen"
-        }
-    ) {
-        composable("loading_screen") {
-            CircularProgressIndicator()
-        }
-        authNavGraph(navController = navController)
-        mainNavGraph(navController = navController)
-    }*/
 }

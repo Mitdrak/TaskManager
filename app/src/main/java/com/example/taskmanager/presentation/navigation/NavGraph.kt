@@ -98,7 +98,7 @@ fun NavGraphBuilder.mainNavGraph(
                         }
                     }
                 }
-            )// NewTaskScreen(onBack = { navController.popBackStack() })
+            )
         }
     }
 
