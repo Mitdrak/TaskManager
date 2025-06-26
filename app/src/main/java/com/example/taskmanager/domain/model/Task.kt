@@ -10,6 +10,8 @@ data class Task(
     val timeEnd: String = "",
     val dateStart: Timestamp? = Timestamp.now(),
     val description: String = "",
+    val taskColor: String = "#FFFFFF", // Default color white
+    val priority: String = "Low", // Default priority
     val completed: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
 )

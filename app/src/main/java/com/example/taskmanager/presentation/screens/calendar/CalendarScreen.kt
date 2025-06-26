@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -42,14 +44,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.taskmanager.domain.model.Task
-import com.example.taskmanager.presentation.common.theme.TaskManagerTheme
+import com.example.taskmanager.presentation.common.components.MonthPicker
 import com.example.taskmanager.presentation.screens.calendar.state.CalendarUiEvent
 import java.time.LocalDate
 import java.time.LocalTime
@@ -68,56 +72,47 @@ fun CalendarScreen(
     var offsetX by remember { mutableStateOf(0f) }
 
     val today = LocalDate.now()
-    val totalDaysInMonth = today.lengthOfMonth()
-    val month = today.month
-    val year = today.year
+    var selectedDate by remember { mutableStateOf(today) }
+    val totalDaysInMonth by remember { mutableStateOf(today.lengthOfMonth()) }/*val month = today.month
+    val year = today.year*/
+    val gridState =
+        rememberLazyGridState(initialFirstVisibleItemIndex = selectedDate.dayOfMonth - 1)
+
 
     // From today to end of month
-    val remainingDays = (today.dayOfMonth..totalDaysInMonth).map { day ->
+    // All the days of the month
+    val remainingDays = (1..totalDaysInMonth).map { day ->
+        selectedDate.withDayOfMonth(day)
+    }
+
+    val remainingDaysFromToday = (selectedDate.dayOfMonth..totalDaysInMonth).map { day ->
         today.withDayOfMonth(day)
     }
-    var selectedDate by remember { mutableStateOf(today) }
-
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.ArrowBack,
-                    contentDescription = "Add",
-                    tint = MaterialTheme.colorScheme.onSecondary,
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .size(50.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(MaterialTheme.colorScheme.primary)
-                        .padding(8.dp)
-                        .clickable(
-                            onClick = {
-                                onSwipe()
-                            },
-                        )
-                )
-                Text(
-                    text = "$month $year",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = Bold,
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .align(Alignment.CenterVertically),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+    var visible by remember {
+        mutableStateOf(false)
+    }
+    MonthPicker(
+        visible = visible,
+        currentMonth = selectedDate.month.value,
+        currentYear = selectedDate.year,
+        confirmButtonCLicked = { month_, year_ ->
+            selectedDate = selectedDate.withMonth(month_).withYear(year_)
+            visible = false
         },
-        floatingActionButton = {
+        cancelClicked = {
+            visible = false
+        })
+
+    Scaffold(modifier = modifier, topBar = {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Icon(
-                imageVector = Icons.Outlined.Add,
+                imageVector = Icons.Outlined.ArrowBack,
                 contentDescription = "Add",
                 tint = MaterialTheme.colorScheme.onSecondary,
                 modifier = Modifier
@@ -128,11 +123,42 @@ fun CalendarScreen(
                     .padding(8.dp)
                     .clickable(
                         onClick = {
-                            println("Add clicked")
+                            onSwipe()
                         },
                     )
             )
+            Text(
+                text = selectedDate.month.name,
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = Bold,
+                modifier = Modifier
+                    .padding(16.dp)
+                    .align(Alignment.CenterVertically)
+                    .clickable(
+                        onClick = {
+                            visible = true
+                        }),
+                color = MaterialTheme.colorScheme.primary
+            )
         }
+    }, floatingActionButton = {
+        Icon(
+            imageVector = Icons.Outlined.Add,
+            contentDescription = "Add",
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .padding(8.dp)
+                .size(50.dp)
+                .clip(RoundedCornerShape(50.dp))
+                .background(MaterialTheme.colorScheme.onSecondary)
+                .padding(8.dp)
+                .clickable(
+                    onClick = {
+                        println("Add clicked")
+                    },
+                )
+        )
+    }
 
     ) {
         Column(
@@ -141,20 +167,19 @@ fun CalendarScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .pointerInput(Unit) {
-                    detectHorizontalDragGestures(
-                        onDragEnd = {
-                            if (offsetX > swipeThreshold) {
-                                onSwipe()
-                                println("Swipe right")
-                            }
-                            offsetX = 0f
-                        },
-                        onHorizontalDrag = { change, dragAmount ->
-                            offsetX += dragAmount
-                        })
+                    detectHorizontalDragGestures(onDragEnd = {
+                        if (offsetX > swipeThreshold) {
+                            onSwipe()
+                            println("Swipe right")
+                        }
+                        offsetX = 0f
+                    }, onHorizontalDrag = { change, dragAmount ->
+                        offsetX += dragAmount
+                    })
                 }) {
             LazyHorizontalGrid(
                 rows = GridCells.Fixed(1),
+                state = gridState,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
@@ -180,16 +205,14 @@ fun CalendarScreen(
                             .width(70.dp)
                             .height(50.dp)
                             .background(
-                                color = backgroundColor,
-                                shape = RoundedCornerShape(16.dp)
+                                color = backgroundColor, shape = RoundedCornerShape(16.dp)
                             )
                             .clickable {
                                 selectedDate = date
                                 viewModel.onUiEvent(
                                     CalendarUiEvent.ChangeDate(date)
                                 )
-                            },
-                        contentAlignment = Alignment.Center
+                            }, contentAlignment = Alignment.Center
                     ) {
                         Column {
                             Text(
@@ -198,10 +221,7 @@ fun CalendarScreen(
                                 fontWeight = Bold,
                                 color = textColor,
                                 modifier = Modifier.padding(
-                                    start = 8.dp,
-                                    end = 8.dp,
-                                    top = 8.dp,
-                                    bottom = 0.dp
+                                    start = 8.dp, end = 8.dp, top = 8.dp, bottom = 0.dp
                                 )
                             )
 
@@ -224,10 +244,7 @@ fun CalendarScreen(
                     .weight(1f)
                     .clip(
                         RoundedCornerShape(
-                            topStart = 26.dp,
-                            topEnd = 26.dp,
-                            bottomStart = 0.dp,
-                            bottomEnd = 0.dp
+                            topStart = 26.dp, topEnd = 26.dp, bottomStart = 0.dp, bottomEnd = 0.dp
                         )
                     )
                     .background(
@@ -237,7 +254,7 @@ fun CalendarScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     Column(modifier = Modifier.padding(top = 16.dp)) {
                         Text(
-                            text = "3 Meetings",
+                            text = "${taskState.size} Tasks",
                             style = MaterialTheme.typography.headlineLarge,
                             fontWeight = Bold,
                             fontSize = 15.sp,
@@ -263,8 +280,7 @@ fun CalendarScreen(
 
 @RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint(
-    "UnusedBoxWithConstraintsScope",
-    "DefaultLocale"
+    "UnusedBoxWithConstraintsScope", "DefaultLocale"
 )
 @Composable
 fun DailySchedule(events: List<Task>) {
@@ -288,9 +304,7 @@ fun DailySchedule(events: List<Task>) {
                     val amPm = if (hour < 12) "AM" else "PM"
                     val displayHour = if (hour == 12 || hour == 0) 12 else hour % 12
                     val label = String.format(
-                        "%d:00 %s",
-                        displayHour,
-                        amPm
+                        "%d:00 %s", displayHour, amPm
                     )
 
                     Row(
@@ -327,15 +341,12 @@ fun DailySchedule(events: List<Task>) {
                 val topOffset = hourHeightDp * (startDecimal - startHour)
                 val eventHeight = hourHeightDp * (endDecimal - startDecimal)
 
-                /*val topOffset = hourHeightDp * (event.timeStart.toInt() - startHour)
-                val eventHeight = hourHeightDp * (event.timeEnd.toInt() - event.timeStart.toInt())*/
 
                 Box(
                     modifier = Modifier
                         .offset(y = topOffset)
                         .padding(
-                            start = 100.dp,
-                            end = 16.dp
+                            start = 100.dp, end = 16.dp
                         )
                         .fillMaxWidth()
                         .height(eventHeight)
@@ -346,17 +357,23 @@ fun DailySchedule(events: List<Task>) {
                                 RoundedCornerShape(16.dp)
                             }
                         )
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(
+                                alpha
+                                = 0.5f
+                            ),
+                            shape = if (startDecimal == endDecimal) {
+                                RoundedCornerShape(0.dp)
+                            } else {
+                                RoundedCornerShape(16.dp)
+                            }
+                        )
                         //RANDOM BACKGROUND COLOR
                         .background(
-                            Color(
-                                android.graphics.Color.argb(
-                                    255,
-                                    (0..255).random(),
-                                    (0..255).random(),
-                                    (0..255).random()
-                                )
-                            ).copy(alpha = 0.6f)
-                        )/*.background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f))*/.padding(8.dp)
+                            Color(event.taskColor.toColorInt())
+                        )
+                        .padding(8.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -367,12 +384,12 @@ fun DailySchedule(events: List<Task>) {
                             text = event.title,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = Bold,
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = if (Color(event.taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary
                         )
                         Text(
                             text = event.description,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = if (Color(event.taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 }
@@ -387,12 +404,38 @@ fun DailySchedule(events: List<Task>) {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun PreviewComp(modifier: Modifier = Modifier) {
-    TaskManagerTheme {
-        CalendarScreen(
-            onSwipe = { },
-            modifier = modifier,
-
+    DailySchedule(
+        events = listOf(
+            Task(
+                taskId = "1",
+                title = "Task 1",
+                description = "Description for Task 1",
+                dateStart = com.google.firebase.Timestamp.now(),
+                timeStart = "08:00",
+                timeEnd = "10:00",
+                completed = false,
+                taskColor = "#FF428FFC"
+            ), Task(
+                taskId = "2",
+                title = "Task 2",
+                description = "Description for Task 2",
+                dateStart = com.google.firebase.Timestamp.now(),
+                timeStart = "10:30",
+                timeEnd = "12:00",
+                completed = true,
+                taskColor = "#FFB54FFC"
+            ), Task(
+                taskId = "3",
+                title = "Task 3",
+                description = "Description for Task 3",
+                dateStart = com.google.firebase.Timestamp.now(),
+                timeStart = "13:00",
+                timeEnd = "15:00",
+                completed = false,
+                taskColor = "#FFB2FFFC"
             )
+        )
+    )
 
-    }
+
 }

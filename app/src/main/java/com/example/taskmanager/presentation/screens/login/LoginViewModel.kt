@@ -66,14 +66,14 @@ class LoginViewModel @Inject constructor(
             is LoginUiEvent.Submit -> {
                 Timber.d("LoginViewModel Submit button clicked")
                 viewModelScope.launch {
-                    /*val result = loginWithEmailAndPasswordUseCase(
+                    val result = loginWithEmailAndPasswordUseCase(
                         email = _loginState.value.emailOrMobile,
                         password = _loginState.value.password
-                    )*/
-                    val result = loginWithEmailAndPasswordUseCase(
+                    )
+                    /*val result = loginWithEmailAndPasswordUseCase(
                         email = "sergio.acs@hotmail.com",
                         password = "123123"
-                    )
+                    )*/
                     result.onSuccess {
                         Timber.d("Login successful")
                         _loginState.update {

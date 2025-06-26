@@ -12,8 +12,9 @@ sealed class Screen(val route: String) {
     object Home : Screen("home_screen")
     object Calendar : Screen("calendar_screen")
     object NewTask : Screen("new_task_screen")
-    object HabitDetails : Screen("habit_details_screen/{habitId}") {
-        fun createRoute(habitId: String) = "habit_details_screen/$habitId"
+    object Tasks : Screen("tasks_screen")
+    object TaskDetails : Screen("task_details_screen/{taskId}") {
+        fun createRoute(taskId: String) = "task_details_screen/$taskId"
     }
 
     object Settings : Screen("settings_screen")

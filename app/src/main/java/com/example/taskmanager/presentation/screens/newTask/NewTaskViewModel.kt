@@ -14,8 +14,11 @@ import com.example.taskmanager.presentation.screens.newTask.state.NewTaskUiEvent
 import com.google.firebase.Timestamp
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.time.LocalDate
@@ -35,13 +38,20 @@ class NewTaskViewModel @Inject constructor(
     val newTaskState: StateFlow<NewTaskState> = _newTaskState.asStateFlow()
     private val _selectedDateTime = MutableStateFlow<Timestamp?>(null)
     val selectedDateTime: StateFlow<Timestamp?> = _selectedDateTime
-
+    val isFieldsNotEmpty: StateFlow<Boolean> = newTaskState.map { state ->
+        state.title.isNotBlank() && state.description.isNotBlank() && state.timeStart.isNotBlank() && state.timeEnd.isNotBlank() && state.date.isNotBlank()
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        false
+    )
 
     fun onUiEvent(newTaskUiEvent: NewTaskUiEvent) {
         when (newTaskUiEvent) {
             NewTaskUiEvent.AddTask -> {
                 addTask()
             }
+
 
             is NewTaskUiEvent.DateChanged -> {
                 _newTaskState.value = _newTaskState.value.copy(
@@ -72,6 +82,25 @@ class NewTaskViewModel @Inject constructor(
                     title = newTaskUiEvent.inputValue
                 )
             }
+
+            is NewTaskUiEvent.TaskColorChanged -> {
+                _newTaskState.value = _newTaskState.value.copy(
+                    taskColor = newTaskUiEvent.inputValue
+                )
+            }
+
+            is NewTaskUiEvent.PriorityChanged -> {
+                _newTaskState.value = _newTaskState.value.copy(
+                    priority = newTaskUiEvent.inputValue
+                )
+            }
+
+            is NewTaskUiEvent.ShowSnackbar -> {
+                Timber.d("Snackbar message: ${newTaskUiEvent.message}")
+                _newTaskState.value = _newTaskState.value.copy(
+                    snackBarMessage = newTaskUiEvent.message
+                )
+            }
         }
     }
 
@@ -97,7 +126,9 @@ class NewTaskViewModel @Inject constructor(
                     description = newTaskState.value.description,
                     timeStart = newTaskState.value.timeStart,
                     timeEnd = newTaskState.value.timeEnd,
-                    dateStart = selectedDateTime.value
+                    dateStart = selectedDateTime.value,
+                    taskColor = newTaskState.value.taskColor,
+                    priority = newTaskState.value.priority
                 )
                 if (userId != null) {
                     val result = addTaskUseCase(task)
@@ -106,6 +137,7 @@ class NewTaskViewModel @Inject constructor(
                             isTaskAdded = true
                         )
                         Timber.d("Task added successfully")
+                        onUiEvent(NewTaskUiEvent.ShowSnackbar("Task added successfully"))
                         clearTaskForm()
                     }.onFailure { error ->
                         _newTaskState.value = _newTaskState.value.copy(
@@ -117,6 +149,7 @@ class NewTaskViewModel @Inject constructor(
                                 )
                             )
                         )
+                        onUiEvent(NewTaskUiEvent.ShowSnackbar("Unknown error: $error"))
                     }
 
                 }
@@ -125,15 +158,24 @@ class NewTaskViewModel @Inject constructor(
     }
 
     private fun fieldsNotEmpty(): Boolean {
-        return newTaskState.value.title.isNotEmpty() &&
-                newTaskState.value.description.isNotEmpty() &&
-                newTaskState.value.timeStart.isNotEmpty() &&
-                newTaskState.value.timeEnd.isNotEmpty() &&
-                newTaskState.value.date.isNotEmpty()
+        return newTaskState.value.title.isNotEmpty() && newTaskState.value.description.isNotEmpty() && newTaskState.value.timeStart.isNotEmpty() && newTaskState.value.timeEnd.isNotEmpty() && newTaskState.value.date.isNotEmpty()
     }
 
     fun clearTaskForm() {
-        _newTaskState.value = NewTaskState()
+        _newTaskState.value = _newTaskState.value.copy(
+            title = "",
+            description = "",
+            timeStart = "",
+            timeEnd = "",
+            date = "",
+            taskColor = "#FFB2FFFC",
+            priority = "Medium",
+            isTaskAdded = false
+        )
+    }
+
+    fun snackbarMessageShown() {
+        _newTaskState.value = _newTaskState.value.copy(snackBarMessage = "")
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

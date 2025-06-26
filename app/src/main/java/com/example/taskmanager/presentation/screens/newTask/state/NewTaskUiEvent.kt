@@ -6,5 +6,8 @@ sealed class NewTaskUiEvent {
     data class TimeStartChanged(val inputValue: String) : NewTaskUiEvent()
     data class TimeEndChanged(val inputValue: String) : NewTaskUiEvent()
     data class DateChanged(val inputValue: String) : NewTaskUiEvent()
+    data class TaskColorChanged(val inputValue: String) : NewTaskUiEvent()
+    data class PriorityChanged(val inputValue: String) : NewTaskUiEvent()
+    data class ShowSnackbar(val message: String) : NewTaskUiEvent()
     object AddTask : NewTaskUiEvent()
 }

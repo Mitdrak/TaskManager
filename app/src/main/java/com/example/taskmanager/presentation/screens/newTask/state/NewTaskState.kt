@@ -7,8 +7,11 @@ data class NewTaskState(
     val timeStart: String = "",
     val timeEnd: String = "",
     val date: String = "",
+    val taskColor: String = "#FFFFFF", // Default color white
+    val priority: String = "Low", // Default priority
     val isLoading: Boolean = false,
     val isTaskAdded: Boolean = false,
+    val snackBarMessage: String = "",
     val errorState: NewTaskErrorState = NewTaskErrorState()
 )
 

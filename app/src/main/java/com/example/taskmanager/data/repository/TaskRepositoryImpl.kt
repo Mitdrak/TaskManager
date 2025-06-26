@@ -132,4 +132,19 @@ class TaskRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun getTaskById(taskId: String): Result<Task> {
+        return try {
+            Timber.d("Obteniendo tarea con ID: $taskId")
+            val task = firebaseFirestore.collection("users").document(firebaseAuth.currentUser?.uid ?: "").collection("tasks").document(taskId).get().await().toObject(Task::class.java)
+            if (task != null) {
+                Result.success(task)
+            } else {
+                Result.failure(Exception("Tarea no encontrada"))
+            }
+        } catch (e: Exception) {
+            Timber.e("Error al obtener la tarea: ${e.message}")
+            Result.failure(e)
+        }
+    }
 }

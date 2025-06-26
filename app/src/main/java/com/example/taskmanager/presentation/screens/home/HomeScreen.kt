@@ -43,11 +43,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -67,10 +69,13 @@ fun HomeScreen(
     onSwipe: () -> Unit,
     navigateToNewTask: () -> Unit,
     navigateToLogin: () -> Unit,
+    navigateToTasks: () -> Unit,
+    navigateToTaskDetails: (String) -> Unit = {},
     onLogout: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
+
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val swipeThreshold = 300f
@@ -310,12 +315,22 @@ fun HomeScreen(
                     }
 
                 }
-                Text(
-                    text = "Ongoing Tasks",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = Bold,
-                    modifier = Modifier.padding(16.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.1f))
+                        .clickable {
+                            navigateToTasks()
+                        }
+                ) {
+                    Text(
+                        text = "Ongoing Tasks",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = Bold,
+                        modifier = Modifier
+                            .padding(16.dp)
+                    )
+                }
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -330,7 +345,11 @@ fun HomeScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(80.dp)
+                                .clickable(onClick = {
+                                    navigateToTaskDetails(tasks[it].taskId)
+                                })
                                 .padding(16.dp)
+
                         ) {
                             Checkbox(
                                 checked = tasks[it].completed,
@@ -355,12 +374,22 @@ fun HomeScreen(
                         }
                     }
                 }
-                Text(
-                    text = "Completed Tasks",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = Bold,
-                    modifier = Modifier.padding(16.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.1f))
+                        .clickable {
+                            navigateToTasks()
+                        }
+                ) {
+                    Text(
+                        text = "Completed Tasks",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = Bold,
+                        modifier = Modifier
+                            .padding(16.dp)
+                    )
+                }
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -374,6 +403,10 @@ fun HomeScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .height(80.dp)
+                                .clickable(onClick = {
+                                    navigateToTaskDetails(tasksCompleted[it].taskId)
+                                })
                                 .padding(16.dp)
                         ) {
                             Checkbox(
@@ -403,6 +436,44 @@ fun HomeScreen(
         }
     }
 
+}
+
+@Composable
+fun newExample(modifier: Modifier = Modifier) {
+    Column {
+
+        Box(
+            modifier = Modifier
+                .shadow(4.dp)  // ❌ Applied too early
+                .background(Color.White)
+                .size(100.dp)
+        ) {
+            Text(
+                text = "Hello",
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+
+// Correct: Size determined before shadow
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .background(Color.White)
+                .shadow(4.dp)  // ✅ Applied after size
+        ) {
+            Text(
+                text = "Hello",
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+    }
+
+}
+
+@Preview
+@Composable
+fun examplePreview() {
+    newExample()
 }
 
 @Composable

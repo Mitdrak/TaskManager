@@ -3,11 +3,11 @@ package com.example.taskmanager.presentation.screens.newTask
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
-import android.content.res.Configuration
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,27 +31,30 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.taskmanager.presentation.common.theme.TaskManagerTheme
 import com.example.taskmanager.presentation.screens.newTask.state.NewTaskUiEvent
 import java.time.LocalDate
 import java.time.LocalTime
@@ -81,9 +84,14 @@ fun NewTaskScreen(
     var selectedTimeEnd by remember { mutableStateOf<LocalTime?>(null) }
 
     // Format date and time
-    val formattedDate = selectedDate?.format(DateTimeFormatter.ofPattern("dd MMM yyyy")) ?: "Select date"
-    val formattedTime = selectedTime?.format(DateTimeFormatter.ofPattern("hh:mm a")) ?: "Select time"
-    val formattedTimeEnd = selectedTimeEnd?.format(DateTimeFormatter.ofPattern("hh:mm a")) ?: "Select time"
+    val formattedDate =
+        selectedDate?.format(DateTimeFormatter.ofPattern("dd MMM yyyy")) ?: "Select date"
+    val formattedTime =
+        selectedTime?.format(DateTimeFormatter.ofPattern("hh:mm a")) ?: "Select time"
+    val formattedTimeEnd =
+        selectedTimeEnd?.format(DateTimeFormatter.ofPattern("hh:mm a")) ?: "Select time"
+
+    val isFieldsNotEmpty = viewModel.isFieldsNotEmpty.collectAsStateWithLifecycle()
 
     val datePickerDialog = DatePickerDialog(
         context,
@@ -158,11 +166,25 @@ fun NewTaskScreen(
         calendar.get(Calendar.MINUTE),
         true // 24-hour format
     )
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     BackHandler {
         navigateToHome()
     }
+    LaunchedEffect(uiState.value.snackBarMessage) {
+        uiState.value.snackBarMessage.let { message ->
+            if (message.isEmpty()) return@let
+            snackbarHostState.showSnackbar(message)
+            viewModel.snackbarMessageShown()
+        }
+    }
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(
+                snackbarHostState,
+            )
+        },
         topBar = {
             Row(
                 modifier = Modifier
@@ -170,7 +192,6 @@ fun NewTaskScreen(
                     .padding(16.dp)
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Icon(
                     imageVector = Icons.Outlined.ArrowBack,
@@ -197,23 +218,6 @@ fun NewTaskScreen(
                         .align(Alignment.CenterVertically),
                     color = MaterialTheme.colorScheme.primary
                 )
-                Box(
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(Color(0xE118AD00))
-                ) {
-                    Text(
-                        text = "Save",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .clickable {
-                                viewModel.onUiEvent(NewTaskUiEvent.AddTask)
-                            },
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
             }
 
         }) {
@@ -321,7 +325,10 @@ fun NewTaskScreen(
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+                        contentPadding = PaddingValues(
+                            horizontal = 16.dp,
+                            vertical = 12.dp
+                        )
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -357,7 +364,10 @@ fun NewTaskScreen(
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+                        contentPadding = PaddingValues(
+                            horizontal = 16.dp,
+                            vertical = 12.dp
+                        )
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -391,7 +401,10 @@ fun NewTaskScreen(
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+                        contentPadding = PaddingValues(
+                            horizontal = 16.dp,
+                            vertical = 12.dp
+                        )
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -413,19 +426,123 @@ fun NewTaskScreen(
                         }
                     }
 
+
                 }
             }
+            Spacer(modifier = Modifier.size(16.dp))
+            Text(
+                text = "Priority",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                //Priorities with color
+                val priorities = listOf(
+                    "High" to Color.Red.copy(0.5f),
+                    "Medium" to Color.Yellow.copy(0.5f),
+                    "Low" to Color.Green.copy(0.5f)
+                )
+                priorities.forEach { priority ->
+                    val onClick = {
+                        viewModel.onUiEvent(NewTaskUiEvent.PriorityChanged(priority.first))
+                    }
+                    Text(
+                        text = priority.first,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (uiState.value.priority == priority.first) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(50.dp))
+                            .background(
+                                if (uiState.value.priority == priority.first) priority.second
+                                else Color.LightGray
+                            )
+                            .clickable(onClick = onClick)
+                            .padding(16.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.size(16.dp))
+            Text(
+                text = "Task Color",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            var color by remember { mutableStateOf(Color.Unspecified) }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val colors = listOf(
+                    Color(0xFFE6DAC3),
+                    Color(0xFFECB7B7),
+                    Color(0xFFC9E4CA),
+                    Color(0xFFB2FFFC),
+                    Color(0xFFD7BDE2),
+                    Color(0xFFF7D2C4),
+                    Color(0xFFE4D6F5),
+                    Color(0xFFB3E5FC),
+                    Color(0xFFC5CAE9),
+                    Color(0xFFF48FB1),
+                    Color(0xFFE1BEE7),
+                    Color(0xFFBCAAA4)
+                )
+                colors.forEach { colorete ->
+                    val onClick = {
+                        color = colorete
+                        viewModel.onUiEvent(
+                            NewTaskUiEvent.TaskColorChanged(
+                                // OUTPUT FORMAT 0xFFRRGGBB
+                                String.format("#%08X", colorete.toArgb())
+                            )
+                        )
+                    }
+                    val modifier = Modifier
+                        .size(32.dp)
+                        .clip(shape = RoundedCornerShape(50))
+                        .background(colorete)
+                        .clickable(onClick = onClick)
+                        .border(
+                            width = if (colorete == color) 2.dp else 0.dp,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            shape = RoundedCornerShape(50.dp)
+                        )
+                    Box(modifier)
+                }
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            //Button to save task
+            Button(
+                onClick = {
+                    viewModel.onUiEvent(NewTaskUiEvent.AddTask)
+                },
+                enabled = isFieldsNotEmpty.value,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFEE4C1),
+                    contentColor = Color.Black
+                )
+            ) {
+                Text(
+                    text = "Create Task",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Black
+                )
+            }
         }
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Preview
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-fun PreviewTaskScreen() {
-    TaskManagerTheme {
-        NewTaskScreen(
-            navigateToHome = {})
     }
 }
