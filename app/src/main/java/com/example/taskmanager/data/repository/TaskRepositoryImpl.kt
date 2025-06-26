@@ -73,12 +73,17 @@ class TaskRepositoryImpl @Inject constructor(
 
         // --- Calcular el rango de Timestamps para el día seleccionado ---
         // Inicio del día seleccionado (ej: 2025-04-25 00:00:00)
-        val startOfDayTimestamp = Timestamp(Date.from(selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant()))
+        val startOfDayTimestamp =
+            Timestamp(Date.from(selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant()))
         // Inicio del día SIGUIENTE (ej: 2025-04-26 00:00:00)
-        val startOfNextDayTimestamp = Timestamp(Date.from(selectedDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()))
-        // -------------------------------------------------------------
+        val startOfNextDayTimestamp = Timestamp(
+            Date.from(
+                selectedDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
+            )
+        )
 
-        val tasksCollection = firebaseFirestore.collection("users").document(userId).collection("tasks")
+        val tasksCollection =
+            firebaseFirestore.collection("users").document(userId).collection("tasks")
 
         Timber.d("Observando tareas para $selectedDate (>= $startOfDayTimestamp y < $startOfNextDayTimestamp)")
 
@@ -93,7 +98,7 @@ class TaskRepositoryImpl @Inject constructor(
                     "dateStart",
                     startOfNextDayTimestamp
                 )      // < Inicio del día siguiente
-                // .orderBy("timeStart") // Podrías ordenar por hora de inicio también
+                .orderBy("timeStart") // Podrías ordenar por hora de inicio también
                 .addSnapshotListener { snapshots, error ->
                     if (error != null) {
                         Timber.w(
@@ -125,7 +130,8 @@ class TaskRepositoryImpl @Inject constructor(
     override suspend fun updateTask(task: Task): Result<Unit> {
         return try {
             Timber.d("Actualizando tarea: $task")
-            firebaseFirestore.collection("users").document(task.userId).collection("tasks").document(task.taskId).set(task)
+            firebaseFirestore.collection("users").document(task.userId).collection("tasks")
+                .document(task.taskId).set(task)
             Result.success(Unit)
         } catch (e: Exception) {
             Timber.e("Error al actualizar la tarea: ${e.message}")
@@ -136,7 +142,9 @@ class TaskRepositoryImpl @Inject constructor(
     override suspend fun getTaskById(taskId: String): Result<Task> {
         return try {
             Timber.d("Obteniendo tarea con ID: $taskId")
-            val task = firebaseFirestore.collection("users").document(firebaseAuth.currentUser?.uid ?: "").collection("tasks").document(taskId).get().await().toObject(Task::class.java)
+            val task =
+                firebaseFirestore.collection("users").document(firebaseAuth.currentUser?.uid ?: "")
+                    .collection("tasks").document(taskId).get().await().toObject(Task::class.java)
             if (task != null) {
                 Result.success(task)
             } else {
