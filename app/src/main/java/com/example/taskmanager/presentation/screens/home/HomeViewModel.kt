@@ -8,7 +8,6 @@ import com.example.taskmanager.domain.manager.UserSessionManager
 import com.example.taskmanager.domain.model.Task
 import com.example.taskmanager.domain.usecase.auth.LogOutUseCase
 import com.example.taskmanager.domain.usecase.task.addTaskUseCase
-import com.example.taskmanager.domain.usecase.task.getTasksUseCase
 import com.example.taskmanager.domain.usecase.task.observeTasksForDateUseCase
 import com.example.taskmanager.domain.usecase.task.updateTaskUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,7 +28,6 @@ class HomeViewModel @Inject constructor(
     private val addTaskUseCase: addTaskUseCase,
     private val logOutUseCase: LogOutUseCase,
     private val updateTaskUseCase: updateTaskUseCase,
-    private val getTaskUseCase: getTasksUseCase,
     private val observeTasksForDateUseCase: observeTasksForDateUseCase,
     private val userSessionManager: UserSessionManager
 ) : ViewModel() {
@@ -74,16 +72,6 @@ class HomeViewModel @Inject constructor(
     }
 
 
-    fun getTasks() {
-        viewModelScope.launch {
-            userSessionManager.userIdFlow.collect { userId ->
-                if (userId != null) {
-                    val result = getTaskUseCase(userId)
-                    Timber.d("Tasks: $result")
-                }
-            }
-        }
-    }
 
     fun updateTask(task: Task) {
         viewModelScope.launch {

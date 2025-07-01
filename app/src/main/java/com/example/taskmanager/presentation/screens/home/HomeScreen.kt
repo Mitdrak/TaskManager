@@ -213,7 +213,6 @@ fun HomeScreen(
                             .clickable(
                                 onClick = {
                                     println("Date")
-                                    viewModel.getTasks()
                                 },
                             )
                     )

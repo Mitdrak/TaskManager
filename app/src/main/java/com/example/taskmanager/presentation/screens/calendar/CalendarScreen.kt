@@ -19,9 +19,11 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -34,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,9 +46,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -54,7 +61,9 @@ import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.taskmanager.domain.model.Task
 import com.example.taskmanager.presentation.common.components.MonthPicker
+import com.example.taskmanager.presentation.common.theme.TaskManagerTheme
 import com.example.taskmanager.presentation.screens.calendar.state.CalendarUiEvent
+import com.google.firebase.Timestamp
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -103,69 +112,72 @@ fun CalendarScreen(
             visible = false
         })
 
-    Scaffold(modifier = modifier, topBar = {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+    Scaffold(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.onPrimary,
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.ArrowBack,
+                    contentDescription = "Add",
+                    tint = MaterialTheme.colorScheme.onSecondary,
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .size(50.dp)
+                        .clip(RoundedCornerShape(50.dp))
+                        .background(MaterialTheme.colorScheme.primary)
+                        .padding(8.dp)
+                        .clickable(
+                            onClick = {
+                                onSwipe()
+                            },
+                        )
+                )
+                Text(
+                    text = selectedDate.month.name,
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = Bold,
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .align(Alignment.CenterVertically)
+                        .clickable(
+                            onClick = {
+                                visible = true
+                            }),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }, floatingActionButton = {
             Icon(
-                imageVector = Icons.Outlined.ArrowBack,
+                imageVector = Icons.Outlined.Add,
                 contentDescription = "Add",
-                tint = MaterialTheme.colorScheme.onSecondary,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .padding(8.dp)
                     .size(50.dp)
                     .clip(RoundedCornerShape(50.dp))
-                    .background(MaterialTheme.colorScheme.primary)
+                    .background(MaterialTheme.colorScheme.onSecondary)
                     .padding(8.dp)
                     .clickable(
                         onClick = {
-                            onSwipe()
+                            println("Add clicked")
                         },
                     )
             )
-            Text(
-                text = selectedDate.month.name,
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = Bold,
-                modifier = Modifier
-                    .padding(16.dp)
-                    .align(Alignment.CenterVertically)
-                    .clickable(
-                        onClick = {
-                            visible = true
-                        }),
-                color = MaterialTheme.colorScheme.primary
-            )
         }
-    }, floatingActionButton = {
-        Icon(
-            imageVector = Icons.Outlined.Add,
-            contentDescription = "Add",
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .padding(8.dp)
-                .size(50.dp)
-                .clip(RoundedCornerShape(50.dp))
-                .background(MaterialTheme.colorScheme.onSecondary)
-                .padding(8.dp)
-                .clickable(
-                    onClick = {
-                        println("Add clicked")
-                    },
-                )
-        )
-    }
 
     ) {
         Column(
             modifier = Modifier
                 .padding(it)
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .background(MaterialTheme.colorScheme.onPrimary)
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(onDragEnd = {
                         if (offsetX > swipeThreshold) {
@@ -248,7 +260,7 @@ fun CalendarScreen(
                         )
                     )
                     .background(
-                        MaterialTheme.colorScheme.primary
+                        MaterialTheme.colorScheme.surface
                     ),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -258,17 +270,18 @@ fun CalendarScreen(
                             style = MaterialTheme.typography.headlineLarge,
                             fontWeight = Bold,
                             fontSize = 15.sp,
-                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                         )
                         Text(
                             text = "${selectedDate.dayOfWeek}",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = Bold,
                             fontSize = 40.sp,
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
-                    DailySchedule(events = taskState)
+//                    DailySchedule(events = taskState)
+                    Daily(events = taskState)
 
                 }
             }
@@ -358,12 +371,9 @@ fun DailySchedule(events: List<Task>) {
                             }
                         )
                         .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.onPrimary.copy(
-                                alpha
-                                = 0.5f
-                            ),
-                            shape = if (startDecimal == endDecimal) {
+                            width = 1.dp, color = MaterialTheme.colorScheme.onPrimary.copy(
+                                alpha = 0.5f
+                            ), shape = if (startDecimal == endDecimal) {
                                 RoundedCornerShape(0.dp)
                             } else {
                                 RoundedCornerShape(16.dp)
@@ -398,13 +408,129 @@ fun DailySchedule(events: List<Task>) {
     }
 }
 
+@Composable
+fun Daily(events: List<Task>, modifier: Modifier = Modifier) {
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
+        var endHourTitleInt = 0
+        LazyColumn(modifier = modifier.fillMaxSize()) {
+            itemsIndexed(events) { index, task ->
+                val previusTaskHourEnd = events.getOrNull(index - 1)?.timeStart
+                val previusTaskHourEndInt = previusTaskHourEnd?.let {
+                    val hourAndMinute = it.split(":")
+                    hourAndMinute[0].toInt() * 60 + hourAndMinute[1].toInt()
+                }
+                val taskHourEndInt =
+                    task.timeEnd.split(":")[0].toInt() * 60 + task.timeEnd.split(":")[1].toInt()
+
+                val taskHourStartInt =
+                    task.timeStart.split(":")[0].toInt() * 60 + task.timeStart.split(":")[1].toInt()
+
+
+                var isSameRangeTime = true
+
+                if (previusTaskHourEndInt != null) {
+                    if (taskHourEndInt <= endHourTitleInt) {
+                        isSameRangeTime = false
+                    } else {
+                        endHourTitleInt = taskHourStartInt + 300
+                        isSameRangeTime = true
+                    }
+                } else {
+                    endHourTitleInt = taskHourStartInt + 300
+                    isSameRangeTime = true
+                }
+                val endHourStringFormatted =
+                    "%02d:%02d".format(endHourTitleInt / 60, endHourTitleInt % 60)
+
+                println("task title ${task.title} task title $taskHourEndInt task end $endHourStringFormatted task title $taskHourEndInt")
+                println("")
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    /*Text(
+                        text = task.dateStart?.toDate().toString().substring(8, 10),
+                        fontSize = 24.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )*/
+
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        if (isSameRangeTime) {
+                            Text(
+                                text = "${task.timeStart} ${if (task.timeStart <= "12:00") "AM" else "PM"} - $endHourStringFormatted" + " ${if (endHourStringFormatted <= "12:00") "AM" else "PM"}",
+                                fontSize = 24.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Divider(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp)
+                                    .height(1.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.9f)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceColorAtElevation(
+                                        4
+                                            .dp
+                                    )
+                                )
+                                .drawBehind { // Usamos drawBehind para dibujar el borde
+                                    // Dibujamos una línea rectangular en el lado izquierdo
+                                    drawRect(
+                                        color = Color(task.taskColor.toColorInt()),
+                                        topLeft = Offset.Zero, // Empieza en la esquina superior izquierda
+                                        size = Size(
+                                            4.dp.toPx(),
+                                            size.height
+                                        ) // Ancho del borde, altura total del Box
+                                    )
+                                }
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "${task.timeStart} ${if (task.timeStart <= "12:00") "AM" else "PM"} - ${task.timeEnd}" + " ${if (task.timeEnd <= "12:00") "AM" else "PM"}",
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                    fontSize = 16.sp
+                                )
+                                Text(
+                                    text = task.title,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+}
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-fun PreviewComp(modifier: Modifier = Modifier) {
-    DailySchedule(
+fun PreviewComp(modifier: Modifier = Modifier) {/*DailySchedule(
         events = listOf(
             Task(
                 taskId = "1",
@@ -435,7 +561,73 @@ fun PreviewComp(modifier: Modifier = Modifier) {
                 taskColor = "#FFB2FFFC"
             )
         )
-    )
+    )*/
+    TaskManagerTheme {
+        Daily(
+            events = listOf(
+                Task(
+                    taskId = "1",
+                    title = "Saloo App Wireframe",
+                    description = "Description for Task 1",
+                    dateStart = Timestamp.now(),
+                    timeStart = "08:00",
+                    timeEnd = "11:00",
+                    completed = false,
+                    taskColor = "#FF428FFC"
+                ),
+                Task(
+                    taskId = "2",
+                    title = "Task 2",
+                    description = "Description for Task 2",
+                    dateStart = Timestamp.now(),
+                    timeStart = "10:30",
+                    timeEnd = "12:00",
+                    completed = true,
+                    taskColor = "#FFB54FFC"
+                ),
+                Task(
+                    taskId = "3",
+                    title = "Task 3",
+                    description = "Description for Task 3",
+                    dateStart = Timestamp.now(),
+                    timeStart = "12:00",
+                    timeEnd = "14:00",
+                    completed = false,
+                    taskColor = "#FFB2FFFC"
+                ),
+                Task(
+                    taskId = "3",
+                    title = "Task 3",
+                    description = "Description for Task 3",
+                    dateStart = Timestamp.now(),
+                    timeStart = "13:00",
+                    timeEnd = "17:00",
+                    completed = false,
+                    taskColor = "#FFB2FFFC"
+                ),
+                Task(
+                    taskId = "4",
+                    title = "Task 4",
+                    description = "Description for Task 4",
+                    dateStart = Timestamp.now(),
+                    timeStart = "16:00",
+                    timeEnd = "18:00",
+                    completed = false,
+                    taskColor = "#FFB2FFFC"
+                ),
+                Task(
+                    taskId = "5",
+                    title = "Task 5",
+                    description = "Description for Task 5",
+                    dateStart = Timestamp.now(),
+                    timeStart = "19:00",
+                    timeEnd = "21:00",
+                    completed = false,
+                    taskColor = "#FFB2FFFC"
+                )
+            )
+        )
+    }
 
 
 }

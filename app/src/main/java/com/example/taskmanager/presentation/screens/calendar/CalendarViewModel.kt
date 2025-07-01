@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.taskmanager.domain.manager.UserSessionManager
 import com.example.taskmanager.domain.model.Task
-import com.example.taskmanager.domain.usecase.task.getTasksUseCase
 import com.example.taskmanager.domain.usecase.task.observeTasksForDateUseCase
 import com.example.taskmanager.presentation.screens.calendar.state.CalendarState
 import com.example.taskmanager.presentation.screens.calendar.state.CalendarUiEvent
@@ -29,7 +28,6 @@ import javax.inject.Inject
 @RequiresApi(Build.VERSION_CODES.O)
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
-    private val getTaskUseCase: getTasksUseCase,
     private val observeTasksForDateUseCase: observeTasksForDateUseCase,
     private val userSessionManager: UserSessionManager
 ) : ViewModel() {
@@ -66,25 +64,6 @@ class CalendarViewModel @Inject constructor(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun getTasks() {
-        viewModelScope.launch {
-            userSessionManager.userIdFlow.collect { userId ->
-                if (userId != null) {
-                    val result = getTaskUseCase(userId)
-                    Timber.d("Tasks: ${result}")
-                    _tasks.value = result.getOrDefault(emptyList())
-                    val timestamp = _tasks.value[0].dateStart
-                    val dateStr = timestamp?.toFormattedString()
-                    val timeOnlyStr = timestamp?.toFormattedString("HH:mm")
-                    val dateOnlyStr = timestamp?.toFormattedString("dd/MM/yyyy")
-                    Timber.d("Formatted date: $dateStr")
-                    Timber.d("Time only: $timeOnlyStr")
-                    Timber.d("Date only: $dateOnlyStr")
-                }
-            }
-        }
-    }
 
     fun onUiEvent(event: CalendarUiEvent) {
         when (event) {

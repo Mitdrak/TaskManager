@@ -1,5 +1,7 @@
 package com.example.taskmanager.di
 
+import com.example.taskmanager.data.local.dao.TaskDao
+import com.example.taskmanager.data.remote.api.FirebaseService
 import com.example.taskmanager.data.repository.AuthRepositoryImpl
 import com.example.taskmanager.data.repository.TaskRepositoryImpl
 import com.example.taskmanager.domain.manager.UserSessionManager
@@ -51,12 +53,14 @@ object FirebaseModule {
     @Provides
     @Singleton
     fun provideTaskRepository(
-        firebaseFirestore: FirebaseFirestore,
+        taskDao: TaskDao,
+        firebaseService: FirebaseService,
         firebaseAuth: FirebaseAuth
     ): TaskRepository {
         return TaskRepositoryImpl(
-            firebaseFirestore,
-            firebaseAuth
+            taskDao = taskDao,
+            firebaseService = firebaseService,
+            firebaseAuth = firebaseAuth
         )
     }
 }
