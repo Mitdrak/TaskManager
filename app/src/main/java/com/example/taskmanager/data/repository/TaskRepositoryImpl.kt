@@ -15,7 +15,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -81,13 +80,13 @@ class TaskRepositoryImpl @Inject constructor(
     }
 
 
-    override suspend fun getTaskById(taskId: String): Result<Task> {
+    override suspend fun getTaskById(taskId: String): Flow<Result<Task>> {
         return withContext(Dispatchers.IO) {
-            val taskEntity = taskDao.getTaskById(taskId).firstOrNull()
-            if (taskEntity != null) {
-                Result.success(taskEntity.toTask())
-            } else {
-                Result.failure(Exception("Task not found with ID: $taskId"))
+            taskDao.getTaskById(taskId).map {
+                it.let { taskEntity ->
+                    Timber.d("Repository: Task obtained by ID: $taskId")
+                    Result.success(taskEntity.toTask())
+                }
             }
         }
     }

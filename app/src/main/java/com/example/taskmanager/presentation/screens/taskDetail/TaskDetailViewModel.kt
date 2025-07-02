@@ -32,13 +32,14 @@ class TaskDetailsViewModel @Inject constructor(
 
     fun getTaskById(taskId: String) {
         viewModelScope.launch {
-            val result = getTaskByIdUseCase(taskId)
-            result.onSuccess { task ->
-                Timber.d("Task retrieved successfully: $task")
-                _task.value = task
-            }.onFailure { exception ->
-                // Handle the error
-                Timber.e("Error retrieving task: ${exception.message}")
+            getTaskByIdUseCase(taskId).collect { result ->
+                result.onSuccess { task ->
+                    Timber.d("Task retrieved successfully: $task")
+                    _task.value = task
+                }.onFailure { exception ->
+                    // Handle the error
+                    Timber.e("Error retrieving task: ${exception.message}")
+                }
             }
         }
     }
