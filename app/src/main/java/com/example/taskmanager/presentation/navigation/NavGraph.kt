@@ -1,5 +1,7 @@
 package com.example.taskmanager.presentation.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -50,6 +52,7 @@ fun NavGraphBuilder.authNavGraph(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 fun NavGraphBuilder.mainNavGraph(
     navController: NavHostController,
     onNavigateToAuthGraph: () -> Unit
@@ -63,11 +66,7 @@ fun NavGraphBuilder.mainNavGraph(
         ) {
             HomeScreen(
                 onSwipe = {
-                    navController.navigate(Screen.Calendar.route) {
-                        popUpTo(Graph.MAIN) {
-                            inclusive = true
-                        }
-                    }
+                    navController.navigate(Screen.Calendar.route)
                 },
                 navigateToNewTask = {
                     navController.navigate(Screen.NewTask.route) {
@@ -90,24 +89,23 @@ fun NavGraphBuilder.mainNavGraph(
         composable(
             route = Screen.Calendar.route
         ) {
-            CalendarScreen(onSwipe = {
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Graph.MAIN) {
-                        inclusive = true
-                    }
-                }
-            })
+            CalendarScreen(
+                onSwipe = {
+                    navController.navigateUp()
+                },
+                navigateToTaskDetails = { taskId ->
+                    navController.navigate(route = Screen.TaskDetails.createRoute(taskId))
+                },
+                navigateToNewTask = {
+                    navController.navigate(route = Screen.NewTask.route)
+                })
         }
         composable(
             route = Screen.NewTask.route
         ) {
             NewTaskScreen(
                 navigateToHome = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Graph.MAIN) {
-                            inclusive = true
-                        }
-                    }
+                    navController.navigateUp()
                 }
             )
         }

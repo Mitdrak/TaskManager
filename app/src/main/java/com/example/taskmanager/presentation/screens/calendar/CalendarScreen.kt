@@ -1,21 +1,17 @@
 package com.example.taskmanager.presentation.screens.calendar
 
-import android.annotation.SuppressLint
 import android.content.res.Configuration
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,9 +20,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowBack
@@ -50,7 +44,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
@@ -61,11 +55,11 @@ import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.taskmanager.domain.model.Task
 import com.example.taskmanager.presentation.common.components.MonthPicker
+import com.example.taskmanager.presentation.common.theme.MontserratFamily
 import com.example.taskmanager.presentation.common.theme.TaskManagerTheme
 import com.example.taskmanager.presentation.screens.calendar.state.CalendarUiEvent
 import com.google.firebase.Timestamp
 import java.time.LocalDate
-import java.time.LocalTime
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -74,7 +68,9 @@ import java.time.LocalTime
 fun CalendarScreen(
     onSwipe: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: CalendarViewModel = hiltViewModel()
+    viewModel: CalendarViewModel = hiltViewModel(),
+    navigateToTaskDetails: (String) -> Unit = {},
+    navigateToNewTask: () -> Unit,
 ) {
     val taskState = viewModel.tasks.collectAsState().value
     val swipeThreshold = 100f
@@ -82,7 +78,7 @@ fun CalendarScreen(
 
     val today = LocalDate.now()
     var selectedDate by remember { mutableStateOf(today) }
-    val totalDaysInMonth by remember { mutableStateOf(today.lengthOfMonth()) }/*val month = today.month
+    val totalDaysInMonth by remember { mutableStateOf(selectedDate.lengthOfMonth()) }/*val month = today.month
     val year = today.year*/
     val gridState =
         rememberLazyGridState(initialFirstVisibleItemIndex = selectedDate.dayOfMonth - 1)
@@ -90,10 +86,15 @@ fun CalendarScreen(
 
     // From today to end of month
     // All the days of the month
-    val remainingDays = (1..totalDaysInMonth).map { day ->
+    //
+    /*val remainingDays = (1..totalDaysInMonth).map { day ->
         selectedDate.withDayOfMonth(day)
+    }*/
+    val maxDay = selectedDate.lengthOfMonth()
+    val safeSelectedDate = selectedDate.withDayOfMonth(minOf(selectedDate.dayOfMonth, maxDay))
+    val remainingDays = (1..maxDay).map { day ->
+        safeSelectedDate.withDayOfMonth(day)
     }
-
     val remainingDaysFromToday = (selectedDate.dayOfMonth..totalDaysInMonth).map { day ->
         today.withDayOfMonth(day)
     }
@@ -105,7 +106,9 @@ fun CalendarScreen(
         currentMonth = selectedDate.month.value,
         currentYear = selectedDate.year,
         confirmButtonCLicked = { month_, year_ ->
-            selectedDate = selectedDate.withMonth(month_).withYear(year_)
+            val newDate = selectedDate.withMonth(month_).withYear(year_)
+            val maxDay = newDate.lengthOfMonth()
+            selectedDate = newDate.withDayOfMonth(minOf(selectedDate.dayOfMonth, maxDay))
             visible = false
         },
         cancelClicked = {
@@ -157,16 +160,17 @@ fun CalendarScreen(
             Icon(
                 imageVector = Icons.Outlined.Add,
                 contentDescription = "Add",
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.onSecondary,
                 modifier = Modifier
                     .padding(8.dp)
-                    .size(50.dp)
-                    .clip(RoundedCornerShape(50.dp))
-                    .background(MaterialTheme.colorScheme.onSecondary)
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colorScheme.primary)
                     .padding(8.dp)
                     .clickable(
                         onClick = {
-                            println("Add clicked")
+                            println("Add")
+                            navigateToNewTask()
                         },
                     )
             )
@@ -241,7 +245,7 @@ fun CalendarScreen(
                                 text = date.dayOfMonth.toString(),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = Bold,
-                                fontSize = 50.sp,
+                                fontSize = 45.sp,
                                 color = textColor,
                                 modifier = Modifier.padding(horizontal = 8.dp)
                             )
@@ -281,7 +285,7 @@ fun CalendarScreen(
                         )
                     }
 //                    DailySchedule(events = taskState)
-                    Daily(events = taskState)
+                    Daily(events = taskState, navigateToTaskDetails)
 
                 }
             }
@@ -291,126 +295,9 @@ fun CalendarScreen(
 }
 
 
-@RequiresApi(Build.VERSION_CODES.O)
-@SuppressLint(
-    "UnusedBoxWithConstraintsScope", "DefaultLocale"
-)
 @Composable
-fun DailySchedule(events: List<Task>) {
-    val startHour = 1
-    val endHour = 24
-    val hourHeightDp = 60.dp
-
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-    ) {
-        val totalHours = endHour - startHour
-        val totalHeight = hourHeightDp * totalHours
-
-        Box(modifier = Modifier.height(totalHeight)) {
-            // Background time labels
-            Column {
-                repeat(totalHours) { index ->
-                    val hour = startHour + index
-                    val amPm = if (hour < 12) "AM" else "PM"
-                    val displayHour = if (hour == 12 || hour == 0) 12 else hour % 12
-                    val label = String.format(
-                        "%d:00 %s", displayHour, amPm
-                    )
-
-                    Row(
-                        verticalAlignment = Alignment.Top,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(hourHeightDp)
-                            .padding(start = 16.dp)
-                    ) {
-                        Text(
-                            text = label,
-                            modifier = Modifier.width(80.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            fontWeight = Bold
-                        )
-
-                    }
-                    Divider(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp),
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-                    )
-                }
-            }
-
-            // Overlay events
-
-            events.forEach { event ->
-                val timeStart = LocalTime.parse(event.timeStart) // e.g., "14:30"
-                val timeEnd = LocalTime.parse(event.timeEnd)     // e.g., "16:00"
-                val startDecimal = timeStart.hour + timeStart.minute / 60f
-                val endDecimal = timeEnd.hour + timeEnd.minute / 60f
-                val topOffset = hourHeightDp * (startDecimal - startHour)
-                val eventHeight = hourHeightDp * (endDecimal - startDecimal)
-
-
-                Box(
-                    modifier = Modifier
-                        .offset(y = topOffset)
-                        .padding(
-                            start = 100.dp, end = 16.dp
-                        )
-                        .fillMaxWidth()
-                        .height(eventHeight)
-                        .clip(
-                            if (startDecimal == endDecimal) {
-                                RoundedCornerShape(0.dp)
-                            } else {
-                                RoundedCornerShape(16.dp)
-                            }
-                        )
-                        .border(
-                            width = 1.dp, color = MaterialTheme.colorScheme.onPrimary.copy(
-                                alpha = 0.5f
-                            ), shape = if (startDecimal == endDecimal) {
-                                RoundedCornerShape(0.dp)
-                            } else {
-                                RoundedCornerShape(16.dp)
-                            }
-                        )
-                        //RANDOM BACKGROUND COLOR
-                        .background(
-                            Color(event.taskColor.toColorInt())
-                        )
-                        .padding(8.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(8.dp)
-                    ) {
-                        Text(
-                            text = event.title,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = Bold,
-                            color = if (Color(event.taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary
-                        )
-                        Text(
-                            text = event.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (Color(event.taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun Daily(events: List<Task>, modifier: Modifier = Modifier) {
-
+fun Daily(events: List<Task>, navigateToTaskDetails: (String) -> Unit, modifier: Modifier = Modifier) {
+    val lineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -466,6 +353,8 @@ fun Daily(events: List<Task>, modifier: Modifier = Modifier) {
                             Text(
                                 text = "${task.timeStart} ${if (task.timeStart <= "12:00") "AM" else "PM"} - $endHourStringFormatted" + " ${if (endHourStringFormatted <= "12:00") "AM" else "PM"}",
                                 fontSize = 24.sp,
+                                fontFamily = MontserratFamily,
+                                fontWeight = FontWeight.Normal,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Divider(
@@ -478,7 +367,12 @@ fun Daily(events: List<Task>, modifier: Modifier = Modifier) {
                         }
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth(0.9f)
+                                .fillMaxWidth(0.95f)
+                                .clickable(
+                                    onClick = {
+                                        navigateToTaskDetails(task.taskId)
+                                    }
+                                )
                                 .background(
                                     MaterialTheme.colorScheme.surfaceColorAtElevation(
                                         4
@@ -487,6 +381,7 @@ fun Daily(events: List<Task>, modifier: Modifier = Modifier) {
                                 )
                                 .drawBehind { // Usamos drawBehind para dibujar el borde
                                     // Dibujamos una línea rectangular en el lado izquierdo
+                                    drawDiagonalLines(lineColor)
                                     drawRect(
                                         color = Color(task.taskColor.toColorInt()),
                                         topLeft = Offset.Zero, // Empieza en la esquina superior izquierda
@@ -505,6 +400,7 @@ fun Daily(events: List<Task>, modifier: Modifier = Modifier) {
                                 Text(
                                     text = "${task.timeStart} ${if (task.timeStart <= "12:00") "AM" else "PM"} - ${task.timeEnd}" + " ${if (task.timeEnd <= "12:00") "AM" else "PM"}",
                                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                    style = MaterialTheme.typography.headlineLarge.copy(fontFamily = MontserratFamily),
                                     fontSize = 16.sp
                                 )
                                 Text(
@@ -514,6 +410,14 @@ fun Daily(events: List<Task>, modifier: Modifier = Modifier) {
                                     fontSize = 18.sp,
                                     modifier = Modifier.padding(top = 8.dp)
                                 )
+                                if (task.description.isNotEmpty()) {
+                                    Text(
+                                        text = task.description,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.padding(top = 12.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -525,6 +429,51 @@ fun Daily(events: List<Task>, modifier: Modifier = Modifier) {
 
 }
 
+private fun DrawScope.drawDiagonalLines(lineColor: Color) {
+    val canvasWidth = size.width
+    val canvasHeight = size.height
+
+    /*val lineColor = Color.White.copy(alpha = 0.05f) // Very subtle white lines*/
+    val strokeWidth = 1.dp.toPx()
+    val lineSpacing = 8.dp.toPx()
+
+    // --- Improved Logic for Diagonal Lines ---
+    // The trick is to cover the entire canvas without drawing "outside" its theoretical boundaries
+    // by considering the maximum diagonal extent.
+
+    // Calculate the number of lines needed across the longest dimension (width + height)
+    // This ensures coverage for all diagonals starting from different points.
+    val totalDiagonalLength = canvasWidth + canvasHeight
+    val numberOfLines = (totalDiagonalLength / lineSpacing).toInt()  // +2 for buffer
+
+    // Start drawing lines. The 'x' coordinate will span from -canvasHeight to canvasWidth + canvasHeight
+    // to ensure lines originating from outside the top-left fully cross the box.
+    for (i in 0 until numberOfLines) {
+        // Calculate the starting X coordinate for each diagonal line.
+        // We start from negative `canvasHeight` to cover the top-left corner properly
+        // and extend beyond `canvasWidth` to cover the bottom-right.
+        var startX = (i * lineSpacing) - canvasHeight
+        var startY = 0f // Adjust startY to ensure the line starts from the top
+        var endX = startX + canvasHeight
+        var endY = canvasHeight
+        if (startX <= 0) {
+            startY = -startX
+            startX = 0f // Ensure startX is not negative
+        }
+        if( endX > canvasWidth) {
+            endY = canvasHeight - (endX - canvasWidth)
+            endX = canvasWidth
+        }
+
+        // Draw the line from top-left direction to bottom-right direction
+        drawLine(
+            color = lineColor,
+            start = Offset(x = startX, y = startY),
+            end = Offset(x = endX, y = endY),
+            strokeWidth = strokeWidth
+        )
+    }
+}
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview
@@ -625,7 +574,10 @@ fun PreviewComp(modifier: Modifier = Modifier) {/*DailySchedule(
                     completed = false,
                     taskColor = "#FFB2FFFC"
                 )
-            )
+            ),
+            navigateToTaskDetails = { taskId ->
+                println("Navigate to task details with id: $taskId")
+            },
         )
     }
 

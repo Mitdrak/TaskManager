@@ -127,6 +127,10 @@ fun NewTaskScreen(
                 hourOfDay,
                 minute
             )
+            if( selectedTimeEnd != null && selectedTimeEnd!! < selectedTime!!) {
+                viewModel.onUiEvent(NewTaskUiEvent.ShowSnackbar("Start time cannot be after end time"))
+                return@TimePickerDialog
+            }
             viewModel.onUiEvent(
                 NewTaskUiEvent.TimeStartChanged(
                     String.format(
@@ -150,6 +154,10 @@ fun NewTaskScreen(
                 hourOfDay,
                 minute
             )
+            if( selectedTime != null && selectedTimeEnd != null && selectedTimeEnd!! < selectedTime!!) {
+                viewModel.onUiEvent(NewTaskUiEvent.ShowSnackbar("End time cannot be before start time"))
+                return@TimePickerDialog
+            }
             viewModel.onUiEvent(
                 NewTaskUiEvent.TimeEndChanged(
                     String.format(
@@ -398,6 +406,7 @@ fun NewTaskScreen(
                     )
                     Button(
                         onClick = { timePickerDialogEnd.show() },
+                        enabled = selectedTime != null,
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         modifier = Modifier.fillMaxWidth(),
