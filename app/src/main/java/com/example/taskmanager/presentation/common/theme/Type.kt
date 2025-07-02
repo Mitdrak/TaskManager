@@ -2,6 +2,7 @@ package com.example.taskmanager.presentation.common.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import com.example.taskmanager.R
@@ -27,6 +28,14 @@ val displayFontFamily = FontFamily(
     )
 )
 
+
+val montserratFont = GoogleFont("Montserrat")
+val MontserratFamily = FontFamily(
+    Font(googleFont = montserratFont, fontProvider = provider, weight = FontWeight.Thin),      // W100
+    Font(googleFont = montserratFont, fontProvider = provider, weight = FontWeight.Normal),  // W400
+    Font(googleFont = montserratFont, fontProvider = provider, weight = FontWeight.Medium),  // W500
+    Font(googleFont = montserratFont, fontProvider = provider, weight = FontWeight.Bold)      // W700
+)
 // Default Material 3 typography values
 val baseline = Typography()
 
