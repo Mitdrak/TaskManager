@@ -417,7 +417,7 @@ fun HomeScreen(
                             )
                             Column {
                                 Text(
-                                    text = "Task ${tasksCompleted[it].title}",
+                                    text = tasksCompleted[it].title,
                                     fontSize = 20.sp,
                                     style = MaterialTheme.typography.headlineLarge,
                                     fontWeight = Bold,

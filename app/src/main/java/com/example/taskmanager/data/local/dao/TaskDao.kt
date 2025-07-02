@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.taskmanager.data.local.entity.TaskEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -16,6 +17,9 @@ interface TaskDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTask(task: TaskEntity)
 
+    @Update(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun updateTask(task: TaskEntity)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(tasks: List<TaskEntity>)
 
@@ -27,6 +31,8 @@ interface TaskDao {
 
     @Query("SELECT * FROM tasks WHERE dateStart >= :startOfDayMillis AND dateStart < :endOfDayMillis")
     fun getTaskbyDateRange(startOfDayMillis: Long, endOfDayMillis: Long): Flow<List<TaskEntity>>
+
+
 
     @Query("SELECT * FROM tasks WHERE taskId = :taskId")
     fun getTaskById(taskId: String): Flow<TaskEntity>

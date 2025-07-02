@@ -10,7 +10,7 @@ import com.example.taskmanager.domain.mapper.toEntity
 import com.example.taskmanager.domain.model.Task
 import com.example.taskmanager.domain.repository.TaskRepository
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.DocumentChange
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -41,24 +41,41 @@ class TaskRepositoryImpl @Inject constructor(
             if (userId != null) {
                 firebaseService.observeAllUserTasks(userId).collect { result ->
                     result.onSuccess { firebaseTasks ->
-                        Timber.d("Repository: Recibidas ${firebaseTasks.size} tareas de Firebase para sincronizar.")
-                        val roomEntities = firebaseTasks.map { it.toEntity() }
-                        taskDao.deleteAllTasks() // ¡Cuidado si tienes más tablas!
-                        taskDao.insertAll(roomEntities)
-                        Timber.d("Repository: Room sincronizado con ${roomEntities.size} tareas.")
+                        when (firebaseTasks.type) {
+                            DocumentChange.Type.ADDED -> {
+                                Timber.d("Repository: New Task Added Firebase: ${firebaseTasks.document.id}")
+                                val task = firebaseTasks.document.toObject(Task::class.java)
+                                val roomEntities = task.toEntity()
+                                taskDao.insertTask(roomEntities)
+                            }
+
+                            DocumentChange.Type.MODIFIED -> {
+                                Timber.d("Repository: Task Updated Firebase: ${firebaseTasks.document.id}")
+                                val task = firebaseTasks.document.toObject(Task::class.java)
+                                val roomEntities = task.toEntity()
+                                taskDao.updateTask(roomEntities)
+                            }
+
+                            DocumentChange.Type.REMOVED -> {
+                                Timber.d("Repository: Task eliminated from Firebase: ${firebaseTasks.document.id}")
+                                taskDao.deleteTask(firebaseTasks.document.id)
+                                Timber.d("Repository: Task eliminated from Room with ID: ${firebaseTasks.document.id}")
+                                return@collect
+                            }
+                        }
                     }.onFailure { error ->
-                        Timber.e("Repository: Error al observar tareas de Firebase para sincronizar: ${error.message}")
+                        Timber.e("Repository: Error  : ${error.message}")
                     }
                 }
             } else {
-                Timber.w("Repository: No hay usuario autenticado para sincronizar tareas desde Firebase.")
+                Timber.w("Repository: No user logged in, cannot observe tasks.")
             }
         }
     }
 
     override suspend fun addTask(task: Task): Result<Unit> {
         return withContext(Dispatchers.IO) {
-            Timber.d("Repository: Solicitud de añadir tarea enviada a Firebase: ${task.title}")
+            Timber.d("Repository: Adding task to firebase: ${task.title}")
             firebaseService.addTaskToFirebase(task)
         }
     }
@@ -70,7 +87,7 @@ class TaskRepositoryImpl @Inject constructor(
             if (taskEntity != null) {
                 Result.success(taskEntity.toTask())
             } else {
-                Result.failure(Exception("Tarea no encontrada"))
+                Result.failure(Exception("Task not found with ID: $taskId"))
             }
         }
     }
@@ -81,7 +98,7 @@ class TaskRepositoryImpl @Inject constructor(
         val endOfDayMillis = selectedDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         return withContext(Dispatchers.IO) {
             taskDao.getTaskbyDateRange(startOfDayMillis, endOfDayMillis).map { tasks ->
-                Timber.d("Repository: Recibidas ${tasks.size} tareas de Room para la fecha $selectedDate.")
+                Timber.d("Repository : ${tasks.size} Task obtained for date: $selectedDate")
                 Result.success(tasks.map { it.toTask() })
             }
         }
@@ -90,11 +107,11 @@ class TaskRepositoryImpl @Inject constructor(
     override suspend fun updateTask(task: Task): Result<Unit> {
         val result = firebaseService.updateTask(task)
         return if (result.isSuccess) {
-            Timber.d("Tarea actualizada con ID: ${task.taskId}")
+            Timber.d("Task updated successfully to firebase: ${task.title}")
             Result.success(Unit)
         } else {
-            Timber.e("Error al actualizar la tarea: ${result.exceptionOrNull()?.message}")
-            Result.failure(result.exceptionOrNull() ?: Exception("Error al actualizar la tarea"))
+            Timber.e("Error with the update: ${result.exceptionOrNull()?.message}")
+            Result.failure(result.exceptionOrNull() ?: Exception("Error updating task"))
         }
     }
 }

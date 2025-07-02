@@ -6,6 +6,7 @@ import com.example.taskmanager.data.local.entity.TaskEntity
 import com.example.taskmanager.domain.model.Task
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -31,12 +32,12 @@ class FirebaseService @Inject constructor(
 
     fun addTaskToFirebase(task: Task): Result<Unit> {
         return try {
-            Timber.d("Agregando tarea: $task")
+            Timber.d("Adding task: $task")
             val collection =
                 firebaseFirestore.collection("users").document(task.userId).collection("tasks")
                     .add(task)
             collection.addOnSuccessListener {
-                Timber.d("Tarea agregada con ID: ${collection}")
+                Timber.d("Task added with ID: ${collection}")
                 val taskId = it.id
                 it.update(
                     "taskId",
@@ -44,36 +45,37 @@ class FirebaseService @Inject constructor(
                 )
             }
             collection.addOnFailureListener {
-                Timber.d("Tarea fallo")
+                Timber.d("Task addition failed")
             }
             Result.success(Unit)
         } catch (e: Exception) {
-            Timber.e("Error al agregar la tarea: ${e.message}")
+            Timber.e("Error adding task: ${e.message}")
             Result.failure(e)
         }
     }
 
     fun updateTask(task: Task): Result<Unit> {
         return try {
-            Timber.d("Actualizando tarea: $task")
+            Timber.d("Updating task to firebase: $task")
             firebaseFirestore.collection("users").document(task.userId).collection("tasks")
                 .document(task.taskId).set(task)
             Result.success(Unit)
         } catch (e: Exception) {
-            Timber.e("Error al actualizar la tarea: ${e.message}")
+            Timber.e("Error updating task: ${e.message}")
             Result.failure(e)
         }
     }
+
     suspend fun getTasks(userId: String): Result<List<Task>> {
         return try {
-            Timber.d("Obteniendo tareas para el usuario: $userId")
+            Timber.d("Obtaining tasks for user: $userId")
             val tasks = firebaseFirestore.collection("users").document(userId).collection("tasks")
                 .get()
                 .await()
                 .toObjects(Task::class.java)
             Result.success(tasks)
         } catch (e: Exception) {
-            Timber.e("Error al obtener las tareas: ${e.message}")
+            Timber.e("Error obtaining tasks: ${e.message}")
             Result.failure(e)
         }
 
@@ -83,42 +85,35 @@ class FirebaseService @Inject constructor(
     fun observeTasksForDate(selectedDate: LocalDate): Flow<Result<List<Task>>> {
         val userId = firebaseAuth.currentUser?.uid
         if (userId == null) {
-            return kotlinx.coroutines.flow.flowOf(Result.failure(Exception("Usuario no autenticado")))
+            return kotlinx.coroutines.flow.flowOf(Result.failure(Exception("User not logged in")))
         }
-
-        // --- Calcular el rango de Timestamps para el día seleccionado ---
-        // Inicio del día seleccionado (ej: 2025-04-25 00:00:00)
         val startOfDayTimestamp =
             Timestamp(Date.from(selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant()))
-        // Inicio del día SIGUIENTE (ej: 2025-04-26 00:00:00)
         val startOfNextDayTimestamp = Timestamp(
             Date.from(
                 selectedDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
             )
         )
-
         val tasksCollection =
             firebaseFirestore.collection("users").document(userId).collection("tasks")
-
-        Timber.d("Observando tareas para $selectedDate (>= $startOfDayTimestamp y < $startOfNextDayTimestamp)")
+        Timber.d("Observing tasks for date: $selectedDate, from $startOfDayTimestamp to $startOfNextDayTimestamp")
 
         return callbackFlow {
             val listenerRegistration = tasksCollection
-                // --- Consulta por rango de fecha ---
                 .whereGreaterThanOrEqualTo(
                     "dateStart",
                     startOfDayTimestamp
-                ) // >= Inicio del día
+                )
                 .whereLessThan(
                     "dateStart",
                     startOfNextDayTimestamp
-                )      // < Inicio del día siguiente
-                .orderBy("timeStart") // Podrías ordenar por hora de inicio también
+                )
+                .orderBy("timeStart")
                 .addSnapshotListener { snapshots, error ->
                     if (error != null) {
                         Timber.w(
                             error,
-                            "Error escuchando tareas para $selectedDate"
+                            "Error $selectedDate"
                         )
                         trySend(Result.failure(error))
                         return@addSnapshotListener
@@ -129,57 +124,59 @@ class FirebaseService @Inject constructor(
                             task?.copy(taskId = doc.id) // Assuming your Task data class has an `id: String` field
                         }
                         for (task in tasks) {
-                            Timber.d("Tarea ${task.taskId}: ${task.title} - ${task.dateStart}")
+                            Timber.d("Task ${task.taskId}: ${task.title} - ${task.dateStart}")
                         }
-                        Timber.d("${tasks.size} tareas encontradas para $selectedDate")
+                        Timber.d("${tasks.size} task founded for $selectedDate")
                         trySend(Result.success(tasks))
                     } else {
-                        Timber.d("Snapshot null para $selectedDate")
+                        Timber.d("Snapshot null for $selectedDate")
                         trySend(Result.success(emptyList()))
                     }
                 }
             awaitClose { listenerRegistration.remove() }
         }
     }
-    suspend fun observeAllUserTasks(userId: String): Flow<Result<List<Task>>> {
-        val tasksCollection = firebaseFirestore.collection("users").document(userId).collection("tasks")
 
+    suspend fun observeAllUserTasks(userId: String): Flow<Result<DocumentChange>> {
+        val tasksCollection = firebaseFirestore.collection("users").document(userId).collection("tasks")
         return callbackFlow {
             val listenerRegistration = tasksCollection
-                // Podrías añadir un orderBy aquí si siempre quieres los datos ordenados
-                // .orderBy("startDateTime", Query.Direction.ASCENDING)
                 .addSnapshotListener { snapshots, error ->
                     if (error != null) {
-                        Timber.w(error, "Error observando todas las tareas para el usuario $userId")
+                        Timber.w(error, "Error to listening to tasks for user $userId")
                         trySend(Result.failure(error))
                         return@addSnapshotListener
                     }
                     if (snapshots != null) {
-                        val tasks = snapshots.documents.mapNotNull { doc ->
-                            val task = doc.toObject(Task::class.java)
-                            task?.copy(taskId = doc.id, userId = userId) // Asegura que el userId esté en el modelo
+                        for (documentChange in snapshots.documentChanges) {
+                            val task = documentChange
+                            trySend(Result.success(task))
                         }
-                        trySend(Result.success(tasks))
                     } else {
-                        trySend(Result.success(emptyList()))
+                        trySend(
+                            Result.failure(
+                                Exception("Snapshot null for user: $userId")
+                            )
+                        )
                     }
                 }
             awaitClose { listenerRegistration.remove() }
         }
     }
+
     suspend fun getTaskById(taskId: String): Result<Task> {
         return try {
-            Timber.d("Obteniendo tarea con ID: $taskId")
+            Timber.d("Obtaining task with ID: $taskId")
             val task =
                 firebaseFirestore.collection("users").document(firebaseAuth.currentUser?.uid ?: "")
                     .collection("tasks").document(taskId).get().await().toObject(Task::class.java)
             if (task != null) {
                 Result.success(task)
             } else {
-                Result.failure(Exception("Tarea no encontrada"))
+                Result.failure(Exception("Task not found with ID: $taskId"))
             }
         } catch (e: Exception) {
-            Timber.e("Error al obtener la tarea: ${e.message}")
+            Timber.e("Error obtaining task: ${e.message}")
             Result.failure(e)
         }
     }
