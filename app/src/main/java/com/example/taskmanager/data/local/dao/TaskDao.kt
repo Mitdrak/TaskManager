@@ -29,7 +29,7 @@ interface TaskDao {
     @Query("DELETE FROM tasks")
     suspend fun deleteAllTasks()
 
-    @Query("SELECT * FROM tasks WHERE dateStart >= :startOfDayMillis AND dateStart < :endOfDayMillis")
+    @Query("SELECT * FROM tasks WHERE dateStart >= :startOfDayMillis AND dateStart < :endOfDayMillis ORDER  BY timeStart ASC")
     fun getTaskbyDateRange(startOfDayMillis: Long, endOfDayMillis: Long): Flow<List<TaskEntity>>
 
 
