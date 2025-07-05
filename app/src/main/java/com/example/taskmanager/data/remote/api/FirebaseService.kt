@@ -150,6 +150,7 @@ class FirebaseService @Inject constructor(
                     if (snapshots != null) {
                         for (documentChange in snapshots.documentChanges) {
                             val task = documentChange
+                            Timber.d("Task change detected: ${task.document.id} - ${task.document.data}")
                             trySend(Result.success(task))
                         }
                     } else {

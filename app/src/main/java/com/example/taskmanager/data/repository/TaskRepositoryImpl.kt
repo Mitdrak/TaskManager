@@ -42,15 +42,25 @@ class TaskRepositoryImpl @Inject constructor(
                     result.onSuccess { firebaseTasks ->
                         when (firebaseTasks.type) {
                             DocumentChange.Type.ADDED -> {
-                                Timber.d("Repository: New Task Added Firebase: ${firebaseTasks.document.id}")
                                 val task = firebaseTasks.document.toObject(Task::class.java)
-                                val roomEntities = task.toEntity()
-                                taskDao.insertTask(roomEntities)
+                                if( task.taskId.isNotEmpty()) {
+                                    Timber.d("Repository: New Task Added Firebase: ${task.taskId}")
+                                    val roomEntities = task.toEntity()
+                                    taskDao.insertTask(roomEntities)
+                                } else {
+                                    //Insert with temporary ID
+                                    val tempTask = task.copy(taskId = firebaseTasks.document.id)
+                                    Timber.d("Repository: New Task Added Firebase with temp ID: ${tempTask.taskId}")
+                                    val roomEntities = tempTask.toEntity()
+                                    taskDao.insertTask(roomEntities)
+                                }
+                                /*val roomEntities = task.toEntity()
+                                taskDao.insertTask(roomEntities)*/
                             }
 
                             DocumentChange.Type.MODIFIED -> {
-                                Timber.d("Repository: Task Updated Firebase: ${firebaseTasks.document.id}")
                                 val task = firebaseTasks.document.toObject(Task::class.java)
+                                Timber.d("Repository: Task Updated Firebase: ${task.taskId}")
                                 val roomEntities = task.toEntity()
                                 taskDao.updateTask(roomEntities)
                             }
@@ -75,7 +85,14 @@ class TaskRepositoryImpl @Inject constructor(
     override suspend fun addTask(task: Task): Result<Unit> {
         return withContext(Dispatchers.IO) {
             Timber.d("Repository: Adding task to firebase: ${task.title}")
-            firebaseService.addTaskToFirebase(task)
+            val result = firebaseService.addTaskToFirebase(task)
+            return@withContext if (result.isSuccess) {
+                Timber.d("Repository: Task added successfully to firebase: ${task.title}")
+                Result.success(Unit)
+            } else {
+                Timber.e("Repository: Error adding task: ${result.exceptionOrNull()?.message}")
+                Result.failure(result.exceptionOrNull() ?: Exception("Error adding task"))
+            }
         }
     }
 
