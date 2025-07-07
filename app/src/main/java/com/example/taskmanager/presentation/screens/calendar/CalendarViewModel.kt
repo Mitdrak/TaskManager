@@ -9,7 +9,6 @@ import com.example.taskmanager.domain.model.Task
 import com.example.taskmanager.domain.usecase.task.observeTasksForDateUseCase
 import com.example.taskmanager.presentation.screens.calendar.state.CalendarState
 import com.example.taskmanager.presentation.screens.calendar.state.CalendarUiEvent
-import com.google.firebase.Timestamp
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,9 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.text.SimpleDateFormat
 import java.time.LocalDate
-import java.util.Locale
 import javax.inject.Inject
 
 
@@ -73,8 +70,6 @@ class CalendarViewModel @Inject constructor(
                     selectedDate = event.date
                 )
                 _selectedDate.value = event.date
-
-                // Handle date change event
             }
 
             CalendarUiEvent.NavigateBack -> TODO()
@@ -85,11 +80,4 @@ class CalendarViewModel @Inject constructor(
         }
     }
 
-    fun Timestamp.toFormattedString(pattern: String = "dd/MM/yyyy HH:mm"): String {
-        val sdf = SimpleDateFormat(
-            pattern,
-            Locale.getDefault()
-        )
-        return sdf.format(this.toDate())
-    }
 }
