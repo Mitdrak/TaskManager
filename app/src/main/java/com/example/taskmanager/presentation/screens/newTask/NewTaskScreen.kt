@@ -268,9 +268,9 @@ fun NewTaskScreen(
                         color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 20.sp,
                     ),
-                    colors = TextFieldDefaults.textFieldColors(
-                        textColor = MaterialTheme.colorScheme.onPrimary,
-                        containerColor = MaterialTheme.colorScheme.primary,
+                    colors = TextFieldDefaults.colors().copy(
+                        unfocusedTextColor = MaterialTheme.colorScheme.onPrimary,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.primary,
                         unfocusedIndicatorColor = Color.Transparent,
                     )
                 )
@@ -309,9 +309,9 @@ fun NewTaskScreen(
                         color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 20.sp,
                     ),
-                    colors = TextFieldDefaults.textFieldColors(
-                        textColor = MaterialTheme.colorScheme.onPrimary,
-                        containerColor = MaterialTheme.colorScheme.primary,
+                    colors = TextFieldDefaults.colors().copy(
+                        unfocusedTextColor = MaterialTheme.colorScheme.onPrimary,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.primary,
                         unfocusedIndicatorColor = Color.Transparent,
                     )
                 )

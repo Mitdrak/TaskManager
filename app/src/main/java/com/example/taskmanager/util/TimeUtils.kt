@@ -1,6 +1,13 @@
 package com.example.taskmanager.util
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.example.taskmanager.domain.model.Task
+import com.google.firebase.Timestamp
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 object TimeUtils {
     fun parseTimeToMinutes(time: String): Int {
@@ -43,7 +50,44 @@ object TimeUtils {
             showTimeHeader = isSameRangeTime,
         )
     }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun convertMillisToDate(millis: Long): String {
+        val zone = ZoneId.systemDefault()
+        val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy").withZone(zone)
+        val localDate = LocalDate.ofEpochDay(
+            millis / (24 * 60 * 60 * 1000) // Convert millis to days
+        )
+        val instant = localDate.atStartOfDay(zone).toInstant()
+        return formatter.format(instant)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun convertStringToTimestamp(dateString: String): Timestamp {
+        val zone = ZoneId.systemDefault()
+        val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy").withZone(zone)
+        val localDate = LocalDate.parse(dateString, formatter)
+        val instant = localDate.atStartOfDay(zone).toInstant()
+        return Timestamp(instant.toEpochMilli(), 0)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun convertTimestampToString(timestamp: Timestamp): String {
+        val zone = ZoneId.systemDefault()
+        val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy").withZone(zone)
+
+        return formatter.format(Instant.ofEpochMilli(timestamp.toDate().time))
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun convertStringToMillis(dateString: String): Long {
+        val zone = ZoneId.systemDefault()
+        val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy").withZone(zone)
+        val localDate = LocalDate.parse(dateString, formatter)
+        return localDate.atStartOfDay(zone).toInstant().toEpochMilli()
+    }
 }
+
 data class TimeBlockInfo(
     val startTime: String,
     val endTime: String,
