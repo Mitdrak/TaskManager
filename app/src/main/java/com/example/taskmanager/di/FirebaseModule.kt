@@ -35,11 +35,13 @@ object FirebaseModule {
     @Singleton
     fun provideAuthRepository(
         firebaseAuth: FirebaseAuth,
-        firebaseFirestore: FirebaseFirestore
+        firebaseFirestore: FirebaseFirestore,
+        taskRepository: TaskRepository
     ): AuthRepository {
         return AuthRepositoryImpl(
             firebaseAuth,
-            firebaseFirestore
+            firebaseFirestore,
+            taskRepository
         )
     }
 

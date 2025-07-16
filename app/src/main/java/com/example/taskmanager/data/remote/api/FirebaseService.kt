@@ -66,19 +66,19 @@ class FirebaseService @Inject constructor(
         }
     }
 
-    suspend fun getTasks(userId: String): Result<List<Task>> {
+    suspend fun getAllTasksOnce(userId: String): Result<List<Task>> {
         return try {
-            Timber.d("Obtaining tasks for user: $userId")
-            val tasks = firebaseFirestore.collection("users").document(userId).collection("tasks")
-                .get()
-                .await()
-                .toObjects(Task::class.java)
+
+            val snapshot = firebaseFirestore.collection("users").document(userId).collection("tasks").get().await()
+
+            val tasks = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Task::class.java)?.copy(taskId = doc.id)
+            }
+
             Result.success(tasks)
         } catch (e: Exception) {
-            Timber.e("Error obtaining tasks: ${e.message}")
             Result.failure(e)
         }
-
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -178,6 +178,17 @@ class FirebaseService @Inject constructor(
             }
         } catch (e: Exception) {
             Timber.e("Error obtaining task: ${e.message}")
+            Result.failure(e)
+        }
+    }
+    suspend fun deleteTask(taskId: String): Result<Unit> {
+        return try {
+            Timber.d("Deleting task with ID: $taskId")
+            firebaseFirestore.collection("users").document(firebaseAuth.currentUser?.uid ?: "")
+                .collection("tasks").document(taskId).delete().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Timber.e("Error deleting task: ${e.message}")
             Result.failure(e)
         }
     }

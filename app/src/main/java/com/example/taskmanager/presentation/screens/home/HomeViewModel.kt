@@ -4,10 +4,10 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.taskmanager.domain.manager.UserSessionManager
 import com.example.taskmanager.domain.model.Task
 import com.example.taskmanager.domain.usecase.auth.LogOutUseCase
-import com.example.taskmanager.domain.usecase.task.addTaskUseCase
+import com.example.taskmanager.domain.usecase.task.deleteAllTasksUseCase
+import com.example.taskmanager.domain.usecase.task.deleteTaskByIdUseCase
 import com.example.taskmanager.domain.usecase.task.observeTasksForDateUseCase
 import com.example.taskmanager.domain.usecase.task.updateTaskUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,11 +25,11 @@ import javax.inject.Inject
 @RequiresApi(Build.VERSION_CODES.O)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val addTaskUseCase: addTaskUseCase,
+    private val deleteTaskByIdUseCase: deleteTaskByIdUseCase,
+    private val deleteAlltasksUseCase: deleteAllTasksUseCase,
     private val logOutUseCase: LogOutUseCase,
     private val updateTaskUseCase: updateTaskUseCase,
     private val observeTasksForDateUseCase: observeTasksForDateUseCase,
-    private val userSessionManager: UserSessionManager
 ) : ViewModel() {
 
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
@@ -72,7 +72,6 @@ class HomeViewModel @Inject constructor(
     }
 
 
-
     fun updateTask(task: Task) {
         viewModelScope.launch {
             updateTaskUseCase(task)
@@ -82,7 +81,16 @@ class HomeViewModel @Inject constructor(
     fun logout() {
         viewModelScope.launch {
             val result = logOutUseCase()
-            Timber.d("Logout result: $result")
+            result.onSuccess {
+                Timber.d("User logged out successfully")
+                deleteAlltasksUseCase().onSuccess {
+                    Timber.d("All tasks deleted successfully")
+                }.onFailure {
+                    Timber.e("Error deleting all tasks: ${it.message}")
+                }
+            }.onFailure {
+                Timber.e("Error logging out: ${it.message}")
+            }
 
         }
     }

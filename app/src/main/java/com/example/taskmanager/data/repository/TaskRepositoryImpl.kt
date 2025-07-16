@@ -43,7 +43,7 @@ class TaskRepositoryImpl @Inject constructor(
                         when (firebaseTasks.type) {
                             DocumentChange.Type.ADDED -> {
                                 val task = firebaseTasks.document.toObject(Task::class.java)
-                                if( task.taskId.isNotEmpty()) {
+                                if (task.taskId.isNotEmpty()) {
                                     Timber.d("Repository: New Task Added Firebase: ${task.taskId}")
                                     val roomEntities = task.toEntity()
                                     taskDao.insertTask(roomEntities)
@@ -78,6 +78,28 @@ class TaskRepositoryImpl @Inject constructor(
                 }
             } else {
                 Timber.w("Repository: No user logged in, cannot observe tasks.")
+            }
+        }
+    }
+
+    override suspend fun getAllTasks(): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            Timber.d("Repository: Fetching all tasks from Firebase")
+            val userId = firebaseAuth.currentUser?.uid
+            if (userId != null) {
+                val result = firebaseService.getAllTasksOnce(userId)
+                return@withContext if (result.isSuccess) {
+                    Timber.d("Repository: Tasks fetched successfully from Firebase")
+                    val tasks = result.getOrDefault(emptyList())
+                    taskDao.insertAll(tasks.map { it.toEntity() })
+                    Result.success(Unit)
+                } else {
+                    Timber.e("Repository: Error fetching tasks: ${result.exceptionOrNull()?.message}")
+                    Result.failure(result.exceptionOrNull() ?: Exception("Error fetching tasks"))
+                }
+            } else {
+                Timber.w("Repository: No user logged in, cannot fetch tasks.")
+                Result.failure(Exception("No user logged in"))
             }
         }
     }
@@ -128,6 +150,35 @@ class TaskRepositoryImpl @Inject constructor(
         } else {
             Timber.e("Error with the update: ${result.exceptionOrNull()?.message}")
             Result.failure(result.exceptionOrNull() ?: Exception("Error updating task"))
+        }
+    }
+
+    override suspend fun deleteTask(taskId: String): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            Timber.d("Repository: Deleting task from firebase: $taskId")
+            val result = firebaseService.deleteTask(taskId)
+            return@withContext if (result.isSuccess) {
+                Timber.d("Repository: Task deleted successfully from firebase: $taskId")
+                taskDao.deleteTask(taskId)
+                Result.success(Unit)
+            } else {
+                Timber.e("Repository: Error deleting task: ${result.exceptionOrNull()?.message}")
+                Result.failure(result.exceptionOrNull() ?: Exception("Error deleting task"))
+            }
+        }
+    }
+
+    override suspend fun deleteAllTasks(): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            Timber.d("Repository: Deleting all tasks from firebase")
+            val result = taskDao.deleteAllTasks()
+            return@withContext if (result > 0) {
+                Timber.d("Repository: All tasks deleted successfully from firebase")
+                Result.success(Unit)
+            } else {
+                Timber.e("Repository: Error deleting all tasks")
+                Result.failure(Exception("Error deleting all tasks"))
+            }
         }
     }
 }

@@ -59,6 +59,7 @@ import com.example.taskmanager.presentation.common.components.DrawerContent
 import com.example.taskmanager.presentation.common.components.DrawerScreen
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -194,7 +195,7 @@ fun HomeScreen(
                             modifier = Modifier.background(color = MaterialTheme.colorScheme.onPrimary)
                         )
                         Text(
-                            text = "Morning",
+                            text = if(LocalTime.now().hour < 12) "Morning" else "Evening",
                             style = MaterialTheme.typography.headlineLarge,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )

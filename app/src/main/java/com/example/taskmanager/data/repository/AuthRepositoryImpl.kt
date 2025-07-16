@@ -2,6 +2,7 @@ package com.example.taskmanager.data.repository
 
 import com.example.taskmanager.domain.model.AuthUser
 import com.example.taskmanager.domain.repository.AuthRepository
+import com.example.taskmanager.domain.repository.TaskRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
@@ -17,11 +18,13 @@ import javax.inject.Singleton
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
-    private val firebaseFirestore: FirebaseFirestore
+    private val firebaseFirestore: FirebaseFirestore,
+    private val taskRepository: TaskRepository
 ) : AuthRepository {
     override fun observeAuthState(): Flow<AuthUser?> = callbackFlow {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
             Timber.d("AuthState changed: ${firebaseAuth.currentUser?.email}")
+
             trySend(firebaseAuth.currentUser?.toDomain())
         }
         firebaseAuth.addAuthStateListener(listener)
@@ -41,7 +44,15 @@ class AuthRepositoryImpl @Inject constructor(
                 email,
                 password
             ).await()
+            if (firebaseAuth.currentUser == null) {
+                Timber.e("Error al iniciar sesión: usuario no encontrado")
+                return Result.failure(Exception("Error al iniciar sesión: usuario no encontrado"))
+            } else {
+                Timber.d("Sesión iniciada correctamente: ${firebaseAuth.currentUser?.email}")
+                taskRepository.getAllTasks()
+            }
             Result.success(Unit)
+
         } catch (e: Exception) {
             Timber.e("Error al iniciar sesión: ${e.message}")
             Result.failure(mapFirebaseException(e))

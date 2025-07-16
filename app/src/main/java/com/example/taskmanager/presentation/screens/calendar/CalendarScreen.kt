@@ -446,6 +446,7 @@ fun TaskItem(
                     text = task.description,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     fontSize = 14.sp,
+                    maxLines = 5,
                     modifier = Modifier.padding(top = 12.dp)
                 )
             }
