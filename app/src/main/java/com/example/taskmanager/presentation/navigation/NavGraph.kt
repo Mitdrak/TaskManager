@@ -69,11 +69,6 @@ fun NavGraphBuilder.mainNavGraph(
                     navController.navigate(Screen.Calendar.route)
                 },
                 navigateToNewTask = {
-                    /*navController.navigate(Screen.NewTask.route) {
-                        popUpTo(Graph.MAIN) {
-                            inclusive = true
-                        }
-                    }*/
                     navController.navigate(Screen.NewTask.route)
                 },
                 navigateToLogin = {
@@ -132,7 +127,6 @@ fun NavGraphBuilder.mainNavGraph(
                 type = NavType.StringType
             })
         ) {
-            // Handle task details screen with the taskId
             val viewModel: TaskDetailsViewModel = hiltViewModel()
             TaskDetailsScreen(
                 navigateBack = {

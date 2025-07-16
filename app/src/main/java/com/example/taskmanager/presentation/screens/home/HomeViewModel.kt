@@ -61,8 +61,6 @@ class HomeViewModel @Inject constructor(
                         val notCompletedTasks = tasks.filter { it.completed == false }
                         _tasksCompleted.value = filteredTasks
                         _tasks.value = notCompletedTasks
-                        //Complete the flow
-
 
                     }.onFailure {
                         Timber.e("Error fetching tasks: ${it.message}")

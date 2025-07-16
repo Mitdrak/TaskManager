@@ -24,8 +24,8 @@ object DatabaseModule{
             "app_database"
         ).build()
     }
-    @Provides // Provee la instancia del DAO
-    @Singleton // El DAO también debería ser un Singleton para usar la misma instancia de la DB
+    @Provides
+    @Singleton
     fun provideTaskDao(appDatabase: AppDatabase): TaskDao {
         return appDatabase.taskDao()
     }

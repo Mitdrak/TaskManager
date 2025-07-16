@@ -48,16 +48,12 @@ class TaskRepositoryImpl @Inject constructor(
                                     val roomEntities = task.toEntity()
                                     taskDao.insertTask(roomEntities)
                                 } else {
-                                    //Insert with temporary ID
-                                    val tempTask = task.copy(taskId = firebaseTasks.document.id)
+                                     val tempTask = task.copy(taskId = firebaseTasks.document.id)
                                     Timber.d("Repository: New Task Added Firebase with temp ID: ${tempTask.taskId}")
                                     val roomEntities = tempTask.toEntity()
                                     taskDao.insertTask(roomEntities)
                                 }
-                                /*val roomEntities = task.toEntity()
-                                taskDao.insertTask(roomEntities)*/
                             }
-
                             DocumentChange.Type.MODIFIED -> {
                                 val task = firebaseTasks.document.toObject(Task::class.java)
                                 Timber.d("Repository: Task Updated Firebase: ${task.taskId}")

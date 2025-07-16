@@ -284,15 +284,7 @@ fun HomeScreen(
                             fontWeight = Bold,
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.padding(start = 16.dp)
-                        )/*LinearProgressIndicator(
-                         progress = 0.75f,
-                         modifier = Modifier
-                             .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                             .fillMaxWidth()
-                             .height(30.dp),
-                         color = MaterialTheme.colorScheme.onPrimary,
-                         trackColor = MaterialTheme.colorScheme.primaryContainer
-                     )*/
+                        )
                         GradientLinearProgressBar(
                             progress = progress,
                             modifier = Modifier
@@ -438,43 +430,6 @@ fun HomeScreen(
 
 }
 
-@Composable
-fun newExample(modifier: Modifier = Modifier) {
-    Column {
-
-        Box(
-            modifier = Modifier
-                .shadow(4.dp)  // ❌ Applied too early
-                .background(Color.White)
-                .size(100.dp)
-        ) {
-            Text(
-                text = "Hello",
-                modifier = Modifier.padding(16.dp)
-            )
-        }
-
-// Correct: Size determined before shadow
-        Box(
-            modifier = Modifier
-                .size(100.dp)
-                .background(Color.White)
-                .shadow(4.dp)  // ✅ Applied after size
-        ) {
-            Text(
-                text = "Hello",
-                modifier = Modifier.padding(16.dp)
-            )
-        }
-    }
-
-}
-
-@Preview
-@Composable
-fun examplePreview() {
-    newExample()
-}
 
 @Composable
 fun GradientLinearProgressBar(

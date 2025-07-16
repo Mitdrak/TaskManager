@@ -28,7 +28,6 @@ class AuthRepositoryImpl @Inject constructor(
             trySend(firebaseAuth.currentUser?.toDomain())
         }
         firebaseAuth.addAuthStateListener(listener)
-        // Limpiar el listener cuando el flow se cierra
         awaitClose {
             firebaseAuth.removeAuthStateListener(listener)
         }
@@ -39,22 +38,22 @@ class AuthRepositoryImpl @Inject constructor(
         password: String
     ): Result<Unit> {
         return try {
-            Timber.d("Intentando iniciar sesión con $email")
+            Timber.d("Trying to sign in with $email")
             firebaseAuth.signInWithEmailAndPassword(
                 email,
                 password
             ).await()
             if (firebaseAuth.currentUser == null) {
-                Timber.e("Error al iniciar sesión: usuario no encontrado")
-                return Result.failure(Exception("Error al iniciar sesión: usuario no encontrado"))
+                Timber.e("Error: User not found after sign in attempt")
+                return Result.failure(Exception("Error user not found"))
             } else {
-                Timber.d("Sesión iniciada correctamente: ${firebaseAuth.currentUser?.email}")
+                Timber.d("Session successfully started for user: ${firebaseAuth.currentUser?.email}")
                 taskRepository.getAllTasks()
             }
             Result.success(Unit)
 
         } catch (e: Exception) {
-            Timber.e("Error al iniciar sesión: ${e.message}")
+            Timber.e("Error at signing in: ${e.message}")
             Result.failure(mapFirebaseException(e))
         }
     }
@@ -64,7 +63,7 @@ class AuthRepositoryImpl @Inject constructor(
         password: String
     ): Result<Unit> {
         return try {
-            Timber.d("Intentando registrarse con $email")
+            Timber.d("Trying to sign up with $email")
             val authResult = firebaseAuth.createUserWithEmailAndPassword(
                 email,
                 password
@@ -78,14 +77,14 @@ class AuthRepositoryImpl @Inject constructor(
                     "createdAt" to System.currentTimeMillis()
                 )
                 firebaseFirestore.collection("users").document(newUserId).set(userData).await()
-                Timber.d("Usuario registrado y guardado en Firestore: $newUserId")
+                Timber.d("User registered successfully with ID: $newUserId")
                 Result.success(Unit)
             } else {
-                Timber.e("Error al obtener el ID del usuario después de registrarse")
-                Result.failure(Exception("Error al obtener el ID del usuario después de registrarse"))
+                Timber.e("Error obtaining user ID after sign up")
+                Result.failure(Exception("Error obtaining user ID after sign up"))
             }
         } catch (e: Exception) {
-            Timber.e("Error al registrarse: ${e.message}")
+            Timber.e("Error withe the signUp: ${e.message}")
             Result.failure(mapFirebaseException(e))
         }
     }
@@ -93,7 +92,7 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun getCurrentUser(): Flow<AuthUser?> {
         return callbackFlow {
             val currentUser = firebaseAuth.currentUser
-            Timber.d("Usuario actual: ${currentUser?.email}")
+            Timber.d("Actual user: ${currentUser?.email}")
             trySend(currentUser?.toDomain())
             // Limpiar el flow cuando se cierra
             awaitClose { }
@@ -105,7 +104,7 @@ class AuthRepositoryImpl @Inject constructor(
             firebaseAuth.signOut()
             Result.success(Unit)
         } catch (e: Exception) {
-            Timber.e("Error al cerrar sesión: ${e.message}")
+            Timber.e("Error closing session : ${e.message}")
             Result.failure(mapFirebaseException(e))
         }
     }
@@ -118,8 +117,7 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     private fun mapFirebaseException(e: Exception): Exception {
-        // Aquí puedes convertir FirebaseAuthException específicas a errores de dominio
-        return e // Por ahora, devolvemos la misma
+        return e
     }
 
 }
