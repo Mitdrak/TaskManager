@@ -69,11 +69,12 @@ fun NavGraphBuilder.mainNavGraph(
                     navController.navigate(Screen.Calendar.route)
                 },
                 navigateToNewTask = {
-                    navController.navigate(Screen.NewTask.route) {
+                    /*navController.navigate(Screen.NewTask.route) {
                         popUpTo(Graph.MAIN) {
                             inclusive = true
                         }
-                    }
+                    }*/
+                    navController.navigate(Screen.NewTask.route)
                 },
                 navigateToLogin = {
                     onNavigateToAuthGraph()
