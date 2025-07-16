@@ -64,11 +64,10 @@ object TimeUtils {
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun convertStringToTimestamp(dateString: String): Timestamp {
-        val zone = ZoneId.systemDefault()
-        val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy").withZone(zone)
+        val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy") // or "dd/MM/yyyy"
         val localDate = LocalDate.parse(dateString, formatter)
-        val instant = localDate.atStartOfDay(zone).toInstant()
-        return Timestamp(instant.toEpochMilli(), 0)
+        val instant = localDate.atStartOfDay(ZoneId.systemDefault()).toInstant()
+        return Timestamp(instant.epochSecond, instant.nano)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
