@@ -2,11 +2,15 @@
 
 package com.example.taskmanager.presentation.screens.taskDetail
 
+import android.annotation.SuppressLint
+import android.app.TimePickerDialog
 import android.content.res.Configuration
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +27,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
@@ -30,14 +36,17 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,8 +57,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,6 +74,8 @@ import com.example.taskmanager.presentation.screens.taskDetail.state.TaskDetailU
 import com.example.taskmanager.util.TimeUtils
 import com.google.firebase.Timestamp
 import timber.log.Timber
+import java.time.LocalTime
+import java.util.Calendar
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,23 +88,42 @@ fun TaskDetailsScreen(
 
     val task = viewModel.task.collectAsStateWithLifecycle()
     val editingTask = viewModel.taskDetailState.collectAsStateWithLifecycle().value
-
     TaskDetailsContent(
-        modifier = modifier, navigateBack = navigateBack, task = task.value, taskDetailState = editingTask, onTitleChange = {
+        modifier = modifier, navigateBack = navigateBack, task = task.value, taskDetailState = editingTask,
+        onTitleChange = {
             viewModel.onUiEvent(TaskDetailUiEvent.TaskTitleChanged(it))
-        }, enableEdting = {
+        },
+        enableEdting = {
             viewModel.onUiEvent(TaskDetailUiEvent.ToggleEditMode)
-        }, cancelEditing = {
+        },
+        cancelEditing = {
             viewModel.onUiEvent(TaskDetailUiEvent.CancelEdit)
-        }, onPriorityChange = { newPriority ->
+        },
+        onPriorityChange = { newPriority ->
             viewModel.onUiEvent(TaskDetailUiEvent.TaskPriorityChanged(newPriority))
-        }, onDateChange = { newDate ->
+        },
+        onDateChange = { newDate ->
             viewModel.onUiEvent(TaskDetailUiEvent.TaskDueDateChanged(newDate))
-        })
+        },
+        onTimeStartChange = { newTime ->
+            viewModel.onUiEvent(TaskDetailUiEvent.TaskStartHourChanged(newTime))
+        },
+        onTimeEndChange = { newTime ->
+            viewModel.onUiEvent(TaskDetailUiEvent.TaskEndHourChanged(newTime))
+        },
+        onDescriptionChange = { newDescription ->
+            viewModel.onUiEvent(TaskDetailUiEvent.TaskDescriptionChanged(newDescription))
+        },
+        saveChanges = {
+            viewModel.onUiEvent(TaskDetailUiEvent.SaveChanges)
+        }
+
+    )
 
 
 }
 
+@SuppressLint("DefaultLocale")
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,11 +134,72 @@ fun TaskDetailsContent(
     taskDetailState: TaskDetailState,
     onTitleChange: (String) -> Unit,
     onPriorityChange: (String) -> Unit,
+    onTimeStartChange: (String) -> Unit,
+    onTimeEndChange: (String) -> Unit,
+    onDescriptionChange: (String) -> Unit,
     enableEdting: () -> Unit,
+    saveChanges: () -> Unit,
     cancelEditing: () -> Unit,
     onDateChange: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val calendar = Calendar.getInstance()
+    var selectedStartTime by remember { mutableStateOf<LocalTime?>(null) }
+    var selectedEndTime by remember { mutableStateOf<LocalTime?>(null) }
+
+    val timePickerDialog = TimePickerDialog(
+        context,
+        { _, hourOfDay, minute ->
+            selectedStartTime = LocalTime.of(
+                hourOfDay,
+                minute
+            )
+            if (selectedEndTime != null && selectedEndTime!! < selectedStartTime!!) {
+                /*viewModel.onUiEvent(NewTaskUiEvent.ShowSnackbar("End time cannot be before start time"))*/
+                Timber.e("Start time cannot be after end time")
+                return@TimePickerDialog
+            }
+            onTimeStartChange(
+                String.format(
+                    "%02d",
+                    hourOfDay
+                ) + ":" + String.format(
+                    "%02d",
+                    minute
+                )
+            )
+        },
+        calendar.get(Calendar.HOUR_OF_DAY),
+        calendar.get(Calendar.MINUTE),
+        true // 24-hour format
+    )
+    val timeEndPickerDialog = TimePickerDialog(
+        context,
+        { _, hourOfDay, minute ->
+            selectedEndTime = LocalTime.of(
+                hourOfDay,
+                minute
+            )
+            if (selectedStartTime != null && selectedEndTime != null && selectedEndTime!! < selectedStartTime!!) {
+                /*viewModel.onUiEvent(NewTaskUiEvent.ShowSnackbar("End time cannot be before start time"))*/
+                Timber.e("End time cannot be before start time")
+                return@TimePickerDialog
+            }
+            onTimeEndChange(
+                String.format(
+                    "%02d",
+                    hourOfDay
+                ) + ":" + String.format(
+                    "%02d",
+                    minute
+                )
+            )
+        },
+        calendar.get(Calendar.HOUR_OF_DAY),
+        calendar.get(Calendar.MINUTE),
+        true // 24-hour format
+    )
 
     Scaffold(modifier = modifier, containerColor = Color(task.taskColor.toColorInt()), topBar = {
         Row(
@@ -129,7 +221,9 @@ fun TaskDetailsContent(
             }
             Spacer(modifier = Modifier.weight(1f))
             IconButton(
-                onClick = { if (taskDetailState.isEditing) cancelEditing() else enableEdting() },
+                onClick = {
+                    if (taskDetailState.isEditing) cancelEditing() else enableEdting()
+                },
                 modifier = Modifier
                     .padding(8.dp)
                     .size(48.dp)
@@ -180,6 +274,8 @@ fun TaskDetailsContent(
                         color = if (Color(task.taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary
                     ),
                     colors = TextFieldDefaults.colors().copy(
+                        disabledContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
@@ -216,35 +312,119 @@ fun TaskDetailsContent(
                                 onDateChange = onDateChange,
                                 date = if (taskDetailState.isEditing) TimeUtils.convertTimestampToString(taskDetailState.taskDueDate)
                                 else TimeUtils.convertTimestampToString(task.dateStart!!),
-                                taskColor = task.taskColor
+                                taskColor = task.taskColor,
+                                taskDetailState = taskDetailState
                             )
                         }
                     }
 
                 }
-                Row {
-                    Text(
-                        text = "Time:",
-                        color = if (Color(task.taskColor.toColorInt()).luminance() > 0.5) Color.Black.copy(
-                            0.5f
-                        ) else MaterialTheme.colorScheme.onPrimary.copy(0.5f),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontSize = 18.sp,
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .weight(0.6f)
-                    )
-                    Text(
-                        text = "${task.timeStart} - ${task.timeEnd}",
-                        color = if (Color(task.taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontSize = 18.sp,
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .weight(1f)
-                    )
 
+                if (taskDetailState.isEditing) {
+                    Row(
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "Time:",
+                            color = if (Color(task.taskColor.toColorInt()).luminance() > 0.5) Color.Black.copy(
+                                0.5f
+                            ) else MaterialTheme.colorScheme.onPrimary.copy(0.5f),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontSize = 18.sp,
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .weight(0.6f)
+                        )
+                        Text(
+                            text = "${taskDetailState.timeStart}",
+                            color = if (Color(task.taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontSize = 18.sp,
+                            modifier = Modifier
+                                .border(
+                                    width = 1.dp,
+                                    color = if (Color(task.taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .clickable(
+                                    onClick = {
+                                        Timber.d("Time picker clicked")
+                                        timePickerDialog.show()
+                                    }
+                                )
+                                .padding(top = 16.dp, bottom = 16.dp, start = 16.dp)
+                                .weight(0.5f)
+                        )
+                        Text(
+                            text = "-",
+                            color = if (Color(task.taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontSize = 18.sp,
+                            modifier = Modifier
+                                .padding(top = 16.dp, bottom = 16.dp, start = 8.dp, end = 8.dp)
+                        )
+                        Text(
+                            text = taskDetailState.timeEnd,
+                            color = if (Color(task.taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center,
+                            fontSize = 18.sp,
+                            modifier = Modifier
+                                .border(
+                                    width = 1.dp,
+                                    color = if (Color(task.taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .clickable(
+                                    onClick = {
+                                        Timber.d("Time picker clicked")
+                                        timeEndPickerDialog.show()
+                                    }
+                                )
+                                .padding(top = 16.dp, bottom = 16.dp, end = 16.dp)
+                                .weight(0.5f)
+                        )
+
+
+                    }
+                } else {
+                    Row {
+                        Text(
+                            text = "Time:",
+                            color = if (Color(task.taskColor.toColorInt()).luminance() > 0.5) Color.Black.copy(
+                                0.5f
+                            ) else MaterialTheme.colorScheme.onPrimary.copy(0.5f),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontSize = 18.sp,
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .weight(0.6f)
+                        )
+                        Column {
+                            Text(
+                                text = "${task.timeStart} -",
+                                color = if (Color(task.taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontSize = 18.sp,
+                                modifier = Modifier
+                                    .padding(top = 16.dp, bottom = 16.dp, start = 16.dp)
+                            )
+                        }
+                        Text(
+                            text = "${task.timeEnd}",
+                            color = if (Color(task.taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontSize = 18.sp,
+                            modifier = Modifier
+                                .padding(top = 16.dp, bottom = 16.dp, end = 16.dp)
+                                .weight(0.5f)
+                        )
+
+
+                    }
                 }
+
+
                 Row(
                     modifier = Modifier.padding(0.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -370,19 +550,65 @@ fun TaskDetailsContent(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    Text(
-                        text = task.description,
+                    TextField(
+                        value = if (taskDetailState.isEditing) taskDetailState.taskDescription else task.description,
+                        onValueChange = { onDescriptionChange(it) },
+                        readOnly = !taskDetailState.isEditing,
                         maxLines = 5,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(bottom = 4.dp)
+                        placeholder = {
+                            Text(
+                                text = "Enter task description",
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        },
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
+                        colors = TextFieldDefaults.colors().copy(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            disabledIndicatorColor = Color.Transparent,
+                        ),
+                        modifier = Modifier.fillMaxWidth()
                     )
                     Divider(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
                         thickness = 1.dp,
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
+                    Spacer(modifier = Modifier.weight(1f))
+                    if (taskDetailState.isEditing) {
+
+                        Button(
+                            onClick = {
+                                if (taskDetailState.isEditing) {
+                                    // Save changes logic here
+                                    saveChanges()
+                                    Timber.d("Save changes clicked")
+                                    // You can call a function to save the changes
+                                } else {
+                                    // Handle the case when not in editing mode
+                                    Timber.d("Edit task clicked")
+                                }
+                            },
+                            enabled = taskDetailState.isEditing,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (taskDetailState.isEditing) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            Text(
+                                text = if (taskDetailState.isEditing) "Save Changes" else "",
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = Bold)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -392,54 +618,97 @@ fun TaskDetailsContent(
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun DatePickerDocked(onDateChange: (String) -> Unit, date: String, taskColor: String) {
+fun DatePickerDocked(onDateChange: (String) -> Unit, date: String, taskColor: String, taskDetailState: TaskDetailState) {
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = TimeUtils.convertStringToMillis(date),
+        initialSelectedDateMillis = TimeUtils.convertStringToMillis(TimeUtils.convertTimestampToString(taskDetailState.taskDueDate)),
 
-    )
-    val selectedDate = datePickerState.selectedDateMillis?.let {
+        )
+    var selectedDate = datePickerState.selectedDateMillis?.let {
         TimeUtils.convertMillisToDate(it)
-    } ?: "Select Date"
 
+    } ?: "Select Date"
+    LaunchedEffect(datePickerState.selectedDateMillis) {
+        showDatePicker = false
+        if (selectedDate != TimeUtils.convertTimestampToString(taskDetailState.taskDueDate)) {
+            Timber.d("Se selecciono una fecha nueva $selectedDate")
+            onDateChange(selectedDate)
+        }
+    }
+    LaunchedEffect(taskDetailState.isEditing) {
+        if (!taskDetailState.isEditing) {
+            datePickerState.selectedDateMillis = TimeUtils.convertStringToMillis(TimeUtils.convertTimestampToString(taskDetailState.taskDueDate))
+
+        }
+    }
     Box(
     ) {
         OutlinedTextField(
-            value = selectedDate, onValueChange = { onDateChange(it) }, label = {
+            enabled = taskDetailState.isEditing,
+            value = selectedDate,
+            onValueChange = {
+                selectedDate = it
+                onDateChange(it)
+                Timber.d("Se selecciono una fecha nueva $it")
+                showDatePicker = false // Close the DatePicker after selection
+            },
+            label = {
                 Text(
                     text = "",
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (Color(taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary
                 )
-            }, readOnly = true, trailingIcon = {
-                IconButton(onClick = { showDatePicker = !showDatePicker }) {
+            },
+            readOnly = true,
+            trailingIcon = {
+                IconButton(
+                    onClick = { showDatePicker = !showDatePicker },
+                    enabled = taskDetailState.isEditing,
+                    colors = IconButtonDefaults.iconButtonColors().copy(
+                        disabledContentColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                    )
+                ) {
                     Icon(
-                        tint = if (Color(taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                        tint = if (taskDetailState.isEditing) {
+                            if (Color(taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            Color.Transparent
+                        },
                         imageVector = Icons.Default.DateRange, contentDescription = "Select date"
                     )
                 }
-            }, modifier = Modifier
+            },
+            modifier = Modifier
                 .height(64.dp),
-            colors = TextFieldDefaults.colors().copy(
+            colors = OutlinedTextFieldDefaults.colors().copy(
+                disabledTextColor = if (Color(taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary,
                 unfocusedTextColor = if (Color(taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary,
                 focusedTextColor = if (Color(taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                disabledContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
                 focusedContainerColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = if (Color(taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary,
-                focusedIndicatorColor = if (Color(taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary
+                focusedIndicatorColor = if (Color(taskColor.toColorInt()).luminance() > 0.5) Color.Black else MaterialTheme.colorScheme.onPrimary,
             )
         )
 
-        if (showDatePicker) {
+        if (showDatePicker && taskDetailState.isEditing) {
             Popup(
-                onDismissRequest = { showDatePicker = false }, alignment = Alignment.TopStart
+                onDismissRequest = {
+                    showDatePicker = false
+
+                }, alignment = Alignment.TopStart
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .offset(y = 64.dp)
                         .shadow(elevation = 4.dp)
-                        .background(MaterialTheme.colorScheme.surface)
+                        .background(
+                            Color.Transparent
+                        )
                         .padding(16.dp)
                 ) {
                     DatePicker(
@@ -480,10 +749,64 @@ fun TaskDetailContentPreview() {
                 taskDueDate = Timestamp.now(),
                 taskPriority = "Medium",
                 isCompleted = true,
-                isEditing = true
+                isEditing = false,
+                isLoading = false,
             ),
             onTitleChange = {}, // Replace with actual event handling if needed
-            onPriorityChange = {}, enableEdting = {}, cancelEditing = {}, onDateChange = {}
+            onPriorityChange = {},
+            enableEdting = {},
+            cancelEditing = {},
+            onDateChange = {},
+            onTimeStartChange = {},
+            onTimeEndChange = {},
+            onDescriptionChange = {},
+            saveChanges = {}
+        )
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Preview
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun TaskDetailContentPreview2() {
+    TaskManagerTheme {
+        TaskDetailsContent(
+            navigateBack = {},
+            task = Task(
+                taskId = "1",
+                userId = "1",
+                title = "Nueva tarea de prueba",
+                timeStart = "14:00",
+                timeEnd = "15:00",
+                dateStart = Timestamp.now(),
+                description = "lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+                completed = true,
+                createdAt = 1746640559985,
+                priority = "Medium",
+                taskColor = "#FFB2FFFC" // Example color
+            ),
+            taskDetailState = TaskDetailState(
+                taskId = "1",
+                taskTitle = "Nueva tarea de prueba",
+                taskDescription = "lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+                taskDueDate = Timestamp.now(),
+                timeStart = "14:00 PM",
+                timeEnd = "15:00 PM",
+                taskPriority = "Medium",
+                isCompleted = true,
+                isEditing = true,
+                isLoading = false,
+            ),
+            onTitleChange = {}, // Replace with actual event handling if needed
+            onPriorityChange = {},
+            enableEdting = {},
+            cancelEditing = {},
+            onDateChange = {},
+            onTimeStartChange = {},
+            onTimeEndChange = {},
+            onDescriptionChange = {},
+            saveChanges = {}
         )
     }
 }
