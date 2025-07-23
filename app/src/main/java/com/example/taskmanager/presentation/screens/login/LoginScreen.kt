@@ -61,12 +61,12 @@ fun LoginScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val loginState by viewModel.state.collectAsStateWithLifecycle()
 
-    LaunchedEffect(loginState.isLoginSuccessful) {
+    /*LaunchedEffect(loginState.isLoginSuccessful) {
         if (loginState.isLoginSuccessful) {
             Timber.d("Login successful")
             onLoginSuccess()
         }
-    }
+    }*/
     Scaffold(
     ) {
         Column(

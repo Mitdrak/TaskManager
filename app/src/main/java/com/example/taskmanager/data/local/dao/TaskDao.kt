@@ -35,5 +35,5 @@ interface TaskDao {
 
 
     @Query("SELECT * FROM tasks WHERE taskId = :taskId")
-    fun getTaskById(taskId: String): Flow<TaskEntity>
+    fun getTaskById(taskId: String): Flow<TaskEntity?>
 }

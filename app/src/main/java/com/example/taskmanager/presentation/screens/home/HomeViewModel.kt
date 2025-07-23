@@ -7,8 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.taskmanager.domain.model.Task
 import com.example.taskmanager.domain.usecase.auth.LogOutUseCase
 import com.example.taskmanager.domain.usecase.task.deleteAllTasksUseCase
-import com.example.taskmanager.domain.usecase.task.deleteTaskByIdUseCase
 import com.example.taskmanager.domain.usecase.task.observeTasksForDateUseCase
+import com.example.taskmanager.domain.usecase.task.stopObservingTasksUseCase
 import com.example.taskmanager.domain.usecase.task.updateTaskUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,11 +25,11 @@ import javax.inject.Inject
 @RequiresApi(Build.VERSION_CODES.O)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val deleteTaskByIdUseCase: deleteTaskByIdUseCase,
     private val deleteAlltasksUseCase: deleteAllTasksUseCase,
     private val logOutUseCase: LogOutUseCase,
     private val updateTaskUseCase: updateTaskUseCase,
     private val observeTasksForDateUseCase: observeTasksForDateUseCase,
+    private val stopObservingTasksUseCase: stopObservingTasksUseCase
 ) : ViewModel() {
 
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
@@ -45,8 +45,6 @@ class HomeViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     fun observeTasksForDate() {
         viewModelScope.launch {
-            val result = observeTasksForDateUseCase(LocalDate.now())
-
             observeTasksForDateUseCase(
                 LocalDate.now()
             ).onStart {
@@ -82,6 +80,7 @@ class HomeViewModel @Inject constructor(
             result.onSuccess {
                 Timber.d("User logged out successfully")
                 deleteAlltasksUseCase().onSuccess {
+                    stopObservingTasksUseCase()
                     Timber.d("All tasks deleted successfully")
                 }.onFailure {
                     Timber.e("Error deleting all tasks: ${it.message}")

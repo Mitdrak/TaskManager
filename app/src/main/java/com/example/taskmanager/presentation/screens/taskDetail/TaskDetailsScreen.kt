@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -86,8 +87,15 @@ fun TaskDetailsScreen(
     viewModel: TaskDetailsViewModel = hiltViewModel(),
 ) {
 
+
     val task = viewModel.task.collectAsStateWithLifecycle()
     val editingTask = viewModel.taskDetailState.collectAsStateWithLifecycle().value
+    LaunchedEffect(editingTask) {
+        if (viewModel.taskDetailState.value.isTaskDeleted) {
+            Timber.d("Task deleted, navigating back")
+            navigateBack()
+        }
+    }
     TaskDetailsContent(
         modifier = modifier, navigateBack = navigateBack, task = task.value, taskDetailState = editingTask,
         onTitleChange = {
@@ -114,6 +122,9 @@ fun TaskDetailsScreen(
         onDescriptionChange = { newDescription ->
             viewModel.onUiEvent(TaskDetailUiEvent.TaskDescriptionChanged(newDescription))
         },
+        onDeleteTask = {
+            viewModel.onUiEvent(TaskDetailUiEvent.DeleteTask)
+        },
         saveChanges = {
             viewModel.onUiEvent(TaskDetailUiEvent.SaveChanges)
         }
@@ -137,6 +148,7 @@ fun TaskDetailsContent(
     onTimeStartChange: (String) -> Unit,
     onTimeEndChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
+    onDeleteTask: () -> Unit,
     enableEdting: () -> Unit,
     saveChanges: () -> Unit,
     cancelEditing: () -> Unit,
@@ -220,6 +232,23 @@ fun TaskDetailsContent(
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
+            if (taskDetailState.isEditing) {
+                IconButton(
+                    onClick = {
+                        onDeleteTask()
+                    },
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (taskDetailState.isEditing) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Delete Task", tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
             IconButton(
                 onClick = {
                     if (taskDetailState.isEditing) cancelEditing() else enableEdting()
@@ -760,7 +789,8 @@ fun TaskDetailContentPreview() {
             onTimeStartChange = {},
             onTimeEndChange = {},
             onDescriptionChange = {},
-            saveChanges = {}
+            saveChanges = {},
+            onDeleteTask = {}
         )
     }
 }
@@ -806,7 +836,8 @@ fun TaskDetailContentPreview2() {
             onTimeStartChange = {},
             onTimeEndChange = {},
             onDescriptionChange = {},
-            saveChanges = {}
+            saveChanges = {},
+            onDeleteTask = {}
         )
     }
 }

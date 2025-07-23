@@ -2,7 +2,6 @@ package com.example.taskmanager.data.repository
 
 import com.example.taskmanager.domain.model.AuthUser
 import com.example.taskmanager.domain.repository.AuthRepository
-import com.example.taskmanager.domain.repository.TaskRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
@@ -19,7 +18,6 @@ import javax.inject.Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val firebaseFirestore: FirebaseFirestore,
-    private val taskRepository: TaskRepository
 ) : AuthRepository {
     override fun observeAuthState(): Flow<AuthUser?> = callbackFlow {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -39,17 +37,28 @@ class AuthRepositoryImpl @Inject constructor(
     ): Result<Unit> {
         return try {
             Timber.d("Trying to sign in with $email")
-            firebaseAuth.signInWithEmailAndPassword(
-                email,
-                password
-            ).await()
-            if (firebaseAuth.currentUser == null) {
+
+            // Sign in
+            firebaseAuth.signInWithEmailAndPassword(email, password).await()
+
+            val currentUser = firebaseAuth.currentUser
+            if (currentUser == null) {
                 Timber.e("Error: User not found after sign in attempt")
-                return Result.failure(Exception("Error user not found"))
-            } else {
-                Timber.d("Session successfully started for user: ${firebaseAuth.currentUser?.email}")
-                taskRepository.getAllTasks()
+                return Result.failure(Exception("Error: User not found"))
             }
+
+            Timber.d("Session successfully started for user: ${currentUser.email}")
+
+            // Now wait for task repository
+            /*val tasksResult = taskRepository.getAllTasks() // <- should be suspend and return Result<...>
+
+            return if (tasksResult.isSuccess) {
+                Timber.d("Successfully fetched tasks after login.")
+                Result.success(Unit)
+            } else {
+                Timber.e("Failed to fetch tasks after login.")
+                Result.failure(Exception("Failed to fetch user tasks"))
+            }*/
             Result.success(Unit)
 
         } catch (e: Exception) {

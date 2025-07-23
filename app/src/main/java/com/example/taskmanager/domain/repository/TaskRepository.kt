@@ -14,4 +14,6 @@ interface TaskRepository {
 
     suspend fun deleteTask(taskId: String): Result<Unit>
     suspend fun deleteAllTasks(): Result<Unit>
+    suspend fun startObservingTasks()
+    suspend fun stopObservingTasks()
 }

@@ -3,8 +3,9 @@ package com.example.taskmanager.presentation.navigation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.taskmanager.domain.model.AuthUser
+import com.example.taskmanager.domain.usecase.task.getAllTasksUseCase
+import com.example.taskmanager.domain.usecase.task.startObservingTasksUseCase
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,7 +26,8 @@ sealed class GlobalAuthState {
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
-    private val firebaseFirestore: FirebaseFirestore
+    private val getAllTasksUseCase: getAllTasksUseCase,
+    private val startObservingTasksUseCase: startObservingTasksUseCase
 ) : ViewModel() {
     private val _authState = MutableStateFlow<GlobalAuthState>(GlobalAuthState.UNKNOWN)
     val authState: StateFlow<GlobalAuthState> = _authState
@@ -45,12 +47,22 @@ class AuthViewModel @Inject constructor(
                         "AuthViewModel: Estado GLOBAL = AUTENTICADO (Usuario: " +
                                 "${authUser.currentUser?.email})"
                     )
-                    _authState.value = GlobalAuthState.AUTHENTICATED(
-                        AuthUser(
-                            authUser.currentUser?.uid.toString(),
-                            authUser.currentUser?.email
-                        )
-                    )
+                    viewModelScope.launch {
+                        val tasksResult = getAllTasksUseCase() // Llama al caso de uso para obtener tareas
+                        if(tasksResult.isSuccess){
+                            startObservingTasksUseCase()
+                            _authState.value = GlobalAuthState.AUTHENTICATED(
+                                AuthUser(
+                                    authUser.currentUser?.uid.toString(),
+                                    authUser.currentUser?.email
+                                )
+                            )
+                        }else{
+                            Timber.e("AuthViewModel: Error al obtener tareas después de autenticarse: ${tasksResult.exceptionOrNull()}")
+                            _authState.value = GlobalAuthState.UNAUTHENTICATED // Actualiza Sealed Class
+                        }
+
+                    }
                 } else {
                     // Si no hay usuario, no estamos autenticados
                     Timber.w("AuthViewModel: Estado GLOBAL = NO AUTENTICADO")

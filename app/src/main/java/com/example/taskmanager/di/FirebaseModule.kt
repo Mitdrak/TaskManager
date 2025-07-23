@@ -36,12 +36,10 @@ object FirebaseModule {
     fun provideAuthRepository(
         firebaseAuth: FirebaseAuth,
         firebaseFirestore: FirebaseFirestore,
-        taskRepository: TaskRepository
     ): AuthRepository {
         return AuthRepositoryImpl(
             firebaseAuth,
             firebaseFirestore,
-            taskRepository
         )
     }
 

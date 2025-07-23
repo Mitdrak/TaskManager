@@ -6,6 +6,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.taskmanager.domain.model.Task
+import com.example.taskmanager.domain.usecase.task.deleteTaskByIdUseCase
 import com.example.taskmanager.domain.usecase.task.getTaskByIdUseCase
 import com.example.taskmanager.domain.usecase.task.updateTaskUseCase
 import com.example.taskmanager.presentation.screens.taskDetail.state.TaskDetailState
@@ -24,7 +25,8 @@ import javax.inject.Inject
 class TaskDetailsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getTaskByIdUseCase: getTaskByIdUseCase,
-    private val updateTaskUseCase: updateTaskUseCase
+    private val updateTaskUseCase: updateTaskUseCase,
+    private val deleteTaskByIdUseCase: deleteTaskByIdUseCase
 ) : ViewModel() {
     private val taskId: String? = savedStateHandle["taskId"] ?: ""
 
@@ -156,6 +158,23 @@ class TaskDetailsViewModel @Inject constructor(
                 _taskDetailState.value = _taskDetailState.value.copy(
                     timeEnd = taskDetailUiEvent.inputValue
                 )
+            }
+
+            TaskDetailUiEvent.DeleteTask -> {
+                deleteTask()
+            }
+        }
+    }
+    private fun deleteTask(){
+        viewModelScope.launch {
+            deleteTaskByIdUseCase(task.value.taskId).onSuccess {
+                Timber.d("Task deleted successfully: ${task.value.taskId}")
+                _taskDetailState.value = _taskDetailState.value.copy(
+                    isTaskDeleted = true,
+                    isEditing = false
+                )
+            }.onFailure { exception ->
+                Timber.e("Error deleting task: ${exception.message}")
             }
         }
     }

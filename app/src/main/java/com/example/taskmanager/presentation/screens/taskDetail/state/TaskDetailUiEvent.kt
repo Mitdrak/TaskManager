@@ -10,5 +10,7 @@ sealed class TaskDetailUiEvent {
     data class TaskEndHourChanged(val inputValue: String): TaskDetailUiEvent()
     object ToggleEditMode : TaskDetailUiEvent()
     object SaveChanges : TaskDetailUiEvent()
+
+    object DeleteTask : TaskDetailUiEvent()
     object CancelEdit : TaskDetailUiEvent()
 }

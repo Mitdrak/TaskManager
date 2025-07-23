@@ -1,12 +1,12 @@
 package com.example.taskmanager.domain.usecase.task
 
 import com.example.taskmanager.domain.repository.TaskRepository
-import javax.inject.Inject
+import jakarta.inject.Inject
 
-class getAllTasksUseCase @Inject constructor(
+class stopObservingTasksUseCase @Inject constructor(
     private val taskRepository: TaskRepository
 ) {
-    suspend operator fun invoke(): Result<Unit> {
-        return taskRepository.getAllTasks()
+    suspend operator fun invoke() {
+        taskRepository.stopObservingTasks()
     }
 }
