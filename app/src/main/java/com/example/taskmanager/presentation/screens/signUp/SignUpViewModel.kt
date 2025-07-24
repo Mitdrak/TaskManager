@@ -8,9 +8,11 @@ import com.example.taskmanager.presentation.screens.signUp.state.SignUpErrorStat
 import com.example.taskmanager.presentation.screens.signUp.state.SignUpState
 import com.example.taskmanager.presentation.screens.signUp.state.SignUpUiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,6 +24,8 @@ class SignUpViewModel @Inject constructor(
 ) : ViewModel() {
     private val _signUpState = MutableStateFlow(SignUpState())
     val state: StateFlow<SignUpState> = _signUpState.asStateFlow()
+    private val _snackbarEvent = Channel<String>()
+    val snackbarEvent = _snackbarEvent.receiveAsFlow()
 
     fun onUiEvent(signUpUiEvent: SignUpUiEvent) {
         when (signUpUiEvent) {
@@ -46,6 +50,17 @@ class SignUpViewModel @Inject constructor(
                 val password = state.value.password
 
                 if (email.isNotBlank() && password.isNotBlank()) {
+                    _signUpState.update {
+                        it.copy(
+                            isLoading = true,
+                            errorState = SignUpErrorState(
+                                emailOrMobileErrorState = ErrorState(),
+                                passwordErrorState = ErrorState(),
+                                generalErrorState = ErrorState(),
+                                emptyFieldErrorState = ErrorState()
+                            )
+                        )
+                    }
                     viewModelScope.launch {
                         signUpWithEmailPassword(email, password).onSuccess {
                             _signUpState.update {
@@ -57,14 +72,16 @@ class SignUpViewModel @Inject constructor(
                         }.onFailure { exception ->
                             _signUpState.update {
                                 it.copy(
-                                    isLoading = false, errorState = SignUpErrorState(
+                                    snackbarMessage = "Invalid username or password", errorState = SignUpErrorState(
                                         generalErrorState = ErrorState(
-                                            hasError = true,
-                                            errorMessage = exception.message ?: "Unknown error"
+                                            hasError = true, errorMessage = exception.message ?: "Unknown error"
                                         )
                                     )
                                 )
                             }
+                            _snackbarEvent.send(
+                                _signUpState.value.snackbarMessage
+                            )
 
                         }
                     }
@@ -77,9 +94,29 @@ class SignUpViewModel @Inject constructor(
             }
 
             SignUpUiEvent.SignUpWithGoogle -> {
-                
+
+            }
+
+            SignUpUiEvent.ShowPassword -> {
+                _signUpState.update {
+                    it.copy(
+                        showPassword = !it.showPassword
+                    )
+                }
+            }
+
+            SignUpUiEvent.SnackbarDismissed -> {
+                onSnackbarDismissed()
             }
         }
 
+    }
+
+    private fun onSnackbarDismissed() {
+        _signUpState.update {
+            it.copy(
+                isLoading = false, errorState = SignUpErrorState(), snackbarMessage = ""
+            )
+        }
     }
 }

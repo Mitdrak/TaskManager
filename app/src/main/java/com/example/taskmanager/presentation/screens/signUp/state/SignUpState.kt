@@ -7,6 +7,8 @@ data class SignUpState(
     val isLoading: Boolean = false,
     val processingSignUp: Boolean = false,
     val isSignUpSuccessful: Boolean = false,
+    val showPassword: Boolean = false,
+    val snackbarMessage: String = "",
 )
 
 data class SignUpErrorState(

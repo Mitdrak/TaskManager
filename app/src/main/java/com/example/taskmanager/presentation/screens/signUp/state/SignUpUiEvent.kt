@@ -5,5 +5,7 @@ sealed class SignUpUiEvent {
     data class PasswordChanged(val inputValue: String) : SignUpUiEvent()
     object SignUpWithGoogle : SignUpUiEvent()
     object SignUpWithFacebook : SignUpUiEvent()
+    object SnackbarDismissed : SignUpUiEvent()
+    object ShowPassword : SignUpUiEvent()
     object SignUp : SignUpUiEvent()
 }
