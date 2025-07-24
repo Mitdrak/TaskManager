@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.ArrowBack
@@ -46,11 +48,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -93,6 +99,64 @@ fun NewTaskScreen(
 
     val isFieldsNotEmpty = viewModel.isFieldsNotEmpty.collectAsStateWithLifecycle()
 
+
+
+
+    val timePickerDialogEnd = TimePickerDialog(
+        context,
+        { _, hourOfDay, minute ->
+            selectedTimeEnd = LocalTime.of(
+                hourOfDay,
+                minute
+            )
+            if (selectedTime != null && selectedTimeEnd != null && selectedTimeEnd!! < selectedTime!!) {
+                viewModel.onUiEvent(NewTaskUiEvent.ShowSnackbar("End time cannot be before start time"))
+                return@TimePickerDialog
+            }
+            viewModel.onUiEvent(
+                NewTaskUiEvent.TimeEndChanged(
+                    String.format(
+                        "%02d",
+                        hourOfDay
+                    ) + ":" + String.format(
+                        "%02d",
+                        minute
+                    )
+                )
+            )
+        },
+        calendar.get(Calendar.HOUR_OF_DAY),
+        calendar.get(Calendar.MINUTE),
+        true // 24-hour format
+    )
+    val timePickerDialog = TimePickerDialog(
+        context,
+        { _, hourOfDay, minute ->
+            selectedTime = LocalTime.of(
+                hourOfDay,
+                minute
+            )
+            if (selectedTimeEnd != null && selectedTimeEnd!! < selectedTime!!) {
+                viewModel.onUiEvent(NewTaskUiEvent.ShowSnackbar("Start time cannot be after end time"))
+                return@TimePickerDialog
+            }
+            viewModel.onUiEvent(
+                NewTaskUiEvent.TimeStartChanged(
+                    String.format(
+                        "%02d",
+                        hourOfDay
+                    ) + ":" + String.format(
+                        "%02d",
+                        minute
+                    )
+                )
+            )
+            timePickerDialogEnd.show()
+        },
+        calendar.get(Calendar.HOUR_OF_DAY),
+        calendar.get(Calendar.MINUTE),
+        true // 24-hour format
+    )
     val datePickerDialog = DatePickerDialog(
         context,
         { _, year, month, dayOfMonth ->
@@ -112,67 +176,14 @@ fun NewTaskScreen(
                     calendar.get(Calendar.MINUTE)
                 )
             )
+            timePickerDialog.show()
+
 
 
         },
         calendar.get(Calendar.YEAR),
         calendar.get(Calendar.MONTH),
         calendar.get(Calendar.DAY_OF_MONTH)
-    )
-
-    val timePickerDialog = TimePickerDialog(
-        context,
-        { _, hourOfDay, minute ->
-            selectedTime = LocalTime.of(
-                hourOfDay,
-                minute
-            )
-            if( selectedTimeEnd != null && selectedTimeEnd!! < selectedTime!!) {
-                viewModel.onUiEvent(NewTaskUiEvent.ShowSnackbar("Start time cannot be after end time"))
-                return@TimePickerDialog
-            }
-            viewModel.onUiEvent(
-                NewTaskUiEvent.TimeStartChanged(
-                    String.format(
-                        "%02d",
-                        hourOfDay
-                    ) + ":" + String.format(
-                        "%02d",
-                        minute
-                    )
-                )
-            )
-        },
-        calendar.get(Calendar.HOUR_OF_DAY),
-        calendar.get(Calendar.MINUTE),
-        true // 24-hour format
-    )
-    val timePickerDialogEnd = TimePickerDialog(
-        context,
-        { _, hourOfDay, minute ->
-            selectedTimeEnd = LocalTime.of(
-                hourOfDay,
-                minute
-            )
-            if( selectedTime != null && selectedTimeEnd != null && selectedTimeEnd!! < selectedTime!!) {
-                viewModel.onUiEvent(NewTaskUiEvent.ShowSnackbar("End time cannot be before start time"))
-                return@TimePickerDialog
-            }
-            viewModel.onUiEvent(
-                NewTaskUiEvent.TimeEndChanged(
-                    String.format(
-                        "%02d",
-                        hourOfDay
-                    ) + ":" + String.format(
-                        "%02d",
-                        minute
-                    )
-                )
-            )
-        },
-        calendar.get(Calendar.HOUR_OF_DAY),
-        calendar.get(Calendar.MINUTE),
-        true // 24-hour format
     )
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -243,6 +254,13 @@ fun NewTaskScreen(
                     .padding(horizontal = 16.dp)
                     .padding(bottom = 8.dp)
             )
+            val focusRequesterTitle = remember { FocusRequester() }
+            val focusRequesterDescription = remember { FocusRequester() }
+            val focusRequesterDate = remember { FocusRequester() }
+            val focusRequesterStartHour = remember { FocusRequester() }
+            val focusRequesterEndHour = remember { FocusRequester() }
+            val keyBoardController = LocalSoftwareKeyboardController.current
+
             Box(
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
@@ -251,6 +269,13 @@ fun NewTaskScreen(
                     .background(MaterialTheme.colorScheme.primary)
             ) {
                 TextField(
+                    maxLines = 1,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = {
+                            focusRequesterDescription.requestFocus()
+                        }
+                    ),
                     value = uiState.value.title,
                     onValueChange = { viewModel.onUiEvent(NewTaskUiEvent.TitleChanged(it)) },
                     placeholder = {
@@ -263,7 +288,8 @@ fun NewTaskScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.primary),
+                        .background(MaterialTheme.colorScheme.primary)
+                        .focusRequester(focusRequesterTitle),
                     textStyle = TextStyle(
                         color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 20.sp,
@@ -272,8 +298,7 @@ fun NewTaskScreen(
                         focusedContainerColor = MaterialTheme.colorScheme.primary,
                         unfocusedTextColor = MaterialTheme.colorScheme.onPrimary,
                         unfocusedContainerColor = MaterialTheme.colorScheme.primary,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedIndicatorColor = MaterialTheme.colorScheme.onPrimary,
+                        unfocusedIndicatorColor = MaterialTheme.colorScheme.primary,
                         cursorColor = MaterialTheme.colorScheme.onPrimary,
                     )
                 )
@@ -295,6 +320,14 @@ fun NewTaskScreen(
                     .background(MaterialTheme.colorScheme.primary)
             ) {
                 TextField(
+                    maxLines = 5,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = {
+                            keyBoardController?.hide()
+                            datePickerDialog.show()
+                        }
+                    ),
                     value = uiState.value.description,
                     onValueChange = { viewModel.onUiEvent(NewTaskUiEvent.DescriptionChanged(it)) },
                     placeholder = {
@@ -307,7 +340,8 @@ fun NewTaskScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.primary),
+                        .background(MaterialTheme.colorScheme.primary)
+                        .focusRequester(focusRequesterDescription),
                     textStyle = TextStyle(
                         color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 20.sp,
@@ -316,9 +350,8 @@ fun NewTaskScreen(
                         focusedContainerColor = MaterialTheme.colorScheme.primary,
                         unfocusedTextColor = MaterialTheme.colorScheme.onPrimary,
                         unfocusedContainerColor = MaterialTheme.colorScheme.primary,
-                        unfocusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = MaterialTheme.colorScheme.primary,
                         cursorColor = MaterialTheme.colorScheme.onPrimary,
-                        focusedIndicatorColor = MaterialTheme.colorScheme.onPrimary
                     )
                 )
             }
