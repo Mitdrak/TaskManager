@@ -2,6 +2,8 @@ package com.example.taskmanager.presentation.screens.home
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,13 +45,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -440,8 +440,16 @@ fun GradientLinearProgressBar(
         .clip(RoundedCornerShape(50)),
     gradientColors: List<Color>
 ) {
+    val safeProgress = progress.coerceIn(0f, 1f).let {
+        if (it.isNaN() || it.isInfinite()) 0f else it
+    }
+
+    val animatedProgress by animateFloatAsState(
+        targetValue = safeProgress, // Usar el valor seguro aquí
+        animationSpec = tween(durationMillis = 500)
+    )
     Canvas(modifier = modifier.background(Color.LightGray.copy(alpha = 0.3f))) {
-        val width = size.width * progress
+        val width = size.width * animatedProgress
         drawRect(
             brush = Brush.horizontalGradient(colors = gradientColors),
             size = Size(
