@@ -7,6 +7,8 @@ data class LoginState(
     val isLoginSuccessful: Boolean = false,
     val isLoading: Boolean = false,
     val isSignUpSuccessful: Boolean = false,
+    val showPassword: Boolean = false,
+    val snackbarMessage: String = "",
 )
 
 data class LoginErrorState(

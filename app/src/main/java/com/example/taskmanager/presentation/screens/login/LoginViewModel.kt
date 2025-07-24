@@ -9,9 +9,11 @@ import com.example.taskmanager.presentation.screens.login.state.LoginErrorState
 import com.example.taskmanager.presentation.screens.login.state.LoginState
 import com.example.taskmanager.presentation.screens.login.state.LoginUiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -23,7 +25,15 @@ class LoginViewModel @Inject constructor(
     private val observeAuthStateUseCase: ObserveAuthStateUseCase
 ) : ViewModel() {
     private val _loginState = MutableStateFlow(LoginState())
-    val state: StateFlow<LoginState> = _loginState.asStateFlow()
+
+    /*val state: StateFlow<LoginState> = _loginState.asStateFlow()*/
+    val state = _loginState.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        LoginState()
+    )
+    private val _snackbarEvent = Channel<String>()
+    val snackbarEvent = _snackbarEvent.receiveAsFlow()
 
     init {
         observeAuthState()
@@ -66,6 +76,9 @@ class LoginViewModel @Inject constructor(
             is LoginUiEvent.Submit -> {
                 Timber.d("LoginViewModel Submit button clicked")
                 viewModelScope.launch {
+                    _loginState.update {
+                        it.copy(isLoading = true)
+                    }
                     val result = loginWithEmailAndPasswordUseCase(
                         email = _loginState.value.emailOrMobile,
                         password = _loginState.value.password
@@ -83,20 +96,46 @@ class LoginViewModel @Inject constructor(
                             )
                         }
                     }.onFailure {
+                        Timber.e("Login failed: ${it.message}")
                         _loginState.update {
                             it.copy(
                                 errorState = LoginErrorState(
                                     generalErrorState = ErrorState(
                                         hasError = true,
-                                        errorMessage = "Unknown error"
+                                        errorMessage = "Invalid username or password"
                                     )
                                 ),
-                                isLoading = false
                             )
                         }
+                        _snackbarEvent.send(
+                            _loginState.value.errorState.generalErrorState.errorMessage
+                        )
                     }
                 }
             }
+
+            LoginUiEvent.SnackbarDismissed -> {
+                onSnackbarDismissed()
+            }
+            LoginUiEvent.ShowPassword -> {
+                Timber.d("Toggle show password")
+                _loginState.update {
+                    it.copy(
+                        showPassword = !it.showPassword
+                    )
+                }
+            }
+        }
+    }
+
+    private fun onSnackbarDismissed() {
+        Timber.d("Snackbar dismissed")
+        _loginState.update {
+            it.copy(
+                isLoading = false,
+                errorState = LoginErrorState(),
+                snackbarMessage = ""
+            )
         }
     }
 }

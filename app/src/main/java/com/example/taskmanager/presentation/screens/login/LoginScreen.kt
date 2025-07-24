@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
@@ -27,6 +29,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,11 +40,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,16 +68,31 @@ fun LoginScreen(
     onRegisterClick: () -> Unit,
     viewModel: LoginViewModel = hiltViewModel()
 ) {
-    val snackbarHostState = remember { SnackbarHostState() }
-    val loginState by viewModel.state.collectAsStateWithLifecycle()
 
-    /*LaunchedEffect(loginState.isLoginSuccessful) {
-        if (loginState.isLoginSuccessful) {
-            Timber.d("Login successful")
-            onLoginSuccess()
+    val loginState by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.snackbarEvent.collect { message ->
+            Timber.d("Snackbar message: $message")
+            snackbarHostState.showSnackbar(
+                message = message,
+                withDismissAction = false
+            )
+            viewModel.onUiEvent(LoginUiEvent.SnackbarDismissed)
         }
-    }*/
+    }
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) {
+                Snackbar(
+                    snackbarData = it,
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    dismissActionContentColor = MaterialTheme.colorScheme.onErrorContainer,
+                )
+            }
+        }
     ) {
         Column(
             modifier = Modifier
@@ -79,31 +104,43 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(100.dp))
             Text(
                 text = "Log in to your account✨",
-                fontSize = 35.sp,
+                fontStyle = MaterialTheme.typography.titleLarge.fontStyle,
+                fontSize = 34.sp,
                 fontWeight = Bold,
                 modifier = Modifier.padding(start = 16.dp)
             )
             Text(
                 text = "Welcome back! Please enter your details.",
-                fontSize = 25.sp,
+                fontStyle = MaterialTheme.typography.titleMedium.fontStyle,
+                fontSize = 18.sp,
                 color = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.padding(start = 16.dp)
+                modifier = Modifier.padding(start = 16.dp, top = 8.dp)
             )
             Text(
                 text = "Email",
-                fontSize = 18.sp,
+                fontSize = 14.sp,
                 modifier = Modifier.padding(
                     start = 16.dp,
                     top = 16.dp
                 )
             )
+            val focusManager = LocalFocusManager.current
+
+            val focusRequester1 = remember { FocusRequester() }
+            val focusRequester2 = remember { FocusRequester() }
             OutlinedTextField(
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = {
+                        focusRequester2.requestFocus()
+                    }
+                ),
+                maxLines = 1,
                 value = loginState.emailOrMobile,
                 onValueChange = { viewModel.onUiEvent(LoginUiEvent.EmailOrMobileChanged(it)) },
                 placeholder = {
                     Text(
                         text = "Enter your email",
-                        fontSize = 18.sp
                     )
                 },
                 leadingIcon = {
@@ -119,19 +156,31 @@ fun LoginScreen(
                         end = 16.dp
                     )
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.inverseOnSurface),
+                    .background(MaterialTheme.colorScheme.inverseOnSurface)
+                    .focusRequester(focusRequester1),
                 shape = RoundedCornerShape(15.dp)
 
             )
             Text(
                 text = "Password",
-                fontSize = 18.sp,
+                fontSize = 14.sp,
                 modifier = Modifier.padding(
                     start = 16.dp,
                     top = 16.dp
                 )
             )
+
+            val keyBoardController = LocalSoftwareKeyboardController.current
             OutlinedTextField(
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        /*focusManager.clearFocus()*/
+                        keyBoardController?.hide()
+                        viewModel.onUiEvent(LoginUiEvent.Submit)
+                    }
+                ),
+                maxLines = 1,
                 value = loginState.password,
                 onValueChange = { viewModel.onUiEvent(LoginUiEvent.PasswordChanged(it)) },
                 placeholder = {
@@ -146,9 +195,14 @@ fun LoginScreen(
                         contentDescription = "Password Icon",
                     )
                 },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (loginState.showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     Icon(
+                        modifier = Modifier.clickable(
+                            onClick = {
+                                viewModel.onUiEvent(LoginUiEvent.ShowPassword)
+                            }
+                        ),
                         imageVector = Icons.Outlined.Visibility,
                         contentDescription = "Password Icon",
                     )
@@ -160,7 +214,8 @@ fun LoginScreen(
                         end = 16.dp
                     )
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.inverseOnSurface),
+                    .background(MaterialTheme.colorScheme.inverseOnSurface)
+                    .focusRequester(focusRequester2),
                 shape = RoundedCornerShape(15.dp)
 
             )
@@ -187,7 +242,7 @@ fun LoginScreen(
                 }
                 Text(
                     text = "Forgot Password?",
-                    fontSize = 18.sp,
+                    fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .border(
@@ -195,12 +250,13 @@ fun LoginScreen(
                             color = MaterialTheme.colorScheme.primary,
                             shape = RoundedCornerShape(15.dp)
                         )
-                        .padding(8.dp)
+                        .padding(10.dp)
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
 
             GradientOutlinedButton(
+                enabled = !loginState.isLoading,
                 onClick = {
                     viewModel.onUiEvent(LoginUiEvent.Submit)
                 },
@@ -215,9 +271,13 @@ fun LoginScreen(
                 borderColor = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.height(8.dp))
-            GoogleLoginButton(onClick = { /*TODO*/ })
+            GoogleLoginButton(
+                onClick = { /*TODO*/ }, enabled = !loginState.isLoading,
+            )
             Spacer(modifier = Modifier.height(8.dp))
-            FacebookLoginButton(onClick = { /*TODO*/ })
+            FacebookLoginButton(
+                onClick = { /*TODO*/ }, enabled = !loginState.isLoading,
+            )
             Spacer(modifier = Modifier.weight(1f))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -247,24 +307,25 @@ fun LoginScreen(
 @Composable
 fun GradientOutlinedButton(
     onClick: () -> Unit,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier,
     text: String,
     gradientColors: List<Color>,
     borderColor: Color = Color.White,
     textColor: Color = MaterialTheme.colorScheme.onPrimary,
 ) {
+    val disabledGradientColor = listOf<Color>(
+        Color(0xFF6C6C6C),
+        Color(0xFF6C6C6C),
+    )// Gray color for disabled state
+
     Box(
         modifier = modifier
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick, enabled = enabled)
             .clip(RoundedCornerShape(12.dp)) // Rounded corners
             .fillMaxWidth()
             .height(50.dp) // Height of the button
-            .background(Brush.linearGradient(gradientColors)) // Gradient background
-            .border(
-                width = 1.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(12.dp)
-            )
+            .background(if (enabled) Brush.linearGradient(gradientColors) else Brush.linearGradient(disabledGradientColor)) // Gradient background
             .padding(
                 horizontal = 16.dp,
                 vertical = 8.dp
@@ -284,10 +345,12 @@ fun GradientOutlinedButton(
 @Composable
 fun LoginButton(
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
 
     GradientOutlinedButton(
+        enabled = enabled,
         onClick = { onClick },
         modifier = Modifier.padding(
             horizontal = 16.dp,
@@ -304,14 +367,17 @@ fun LoginButton(
 @Composable
 fun GoogleLoginButton(
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     OutlinedButton(
+        enabled = enabled,
         onClick = {},
         shape = RoundedCornerShape(15.dp),
-        modifier = Modifier.padding(
-            horizontal = 16.dp
-        )
+        modifier = Modifier
+            .padding(
+                horizontal = 16.dp
+            )
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -322,13 +388,13 @@ fun GoogleLoginButton(
                 painter = painterResource(id = R.drawable.icons8_google),
                 contentDescription = "Google Icon",
                 tint = Color.Unspecified,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(30.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Log in with Google",
                 fontSize = 18.sp,
-                color = MaterialTheme.colorScheme.onSurface
+                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(0.5f) // Dimmed text color when disabled
             )
         }
     }
@@ -337,12 +403,15 @@ fun GoogleLoginButton(
 @Composable
 fun FacebookLoginButton(
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     OutlinedButton(
+        enabled = enabled,
         onClick = {},
         shape = RoundedCornerShape(15.dp),
-        modifier = Modifier.padding(horizontal = 16.dp)
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -353,13 +422,13 @@ fun FacebookLoginButton(
                 painter = painterResource(id = R.drawable.facebook_svgrepo_com),
                 contentDescription = "Facebook Icon",
                 tint = Color.Unspecified,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(30.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Log in with Facebook",
                 fontSize = 18.sp,
-                color = MaterialTheme.colorScheme.primary
+                color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(0.5f)
             )
         }
     }

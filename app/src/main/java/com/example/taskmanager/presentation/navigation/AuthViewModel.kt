@@ -37,19 +37,16 @@ class AuthViewModel @Inject constructor(
     }
 
     private fun observeAuthState() {
-        // Usar authStateFlow (más moderno y se gestiona mejor con el scope)
         viewModelScope.launch {
-
-            firebaseAuth.addAuthStateListener { authUser -> // Recolecta los cambios
+            firebaseAuth.addAuthStateListener { authUser ->
                 if (authUser.currentUser != null) {
-                    // Si hay usuario, estamos autenticados
                     Timber.d(
                         "AuthViewModel: Estado GLOBAL = AUTENTICADO (Usuario: " +
                                 "${authUser.currentUser?.email})"
                     )
                     viewModelScope.launch {
-                        val tasksResult = getAllTasksUseCase() // Llama al caso de uso para obtener tareas
-                        if(tasksResult.isSuccess){
+                        val tasksResult = getAllTasksUseCase()
+                        if (tasksResult.isSuccess) {
                             startObservingTasksUseCase()
                             _authState.value = GlobalAuthState.AUTHENTICATED(
                                 AuthUser(
@@ -57,16 +54,21 @@ class AuthViewModel @Inject constructor(
                                     authUser.currentUser?.email
                                 )
                             )
-                        }else{
-                            Timber.e("AuthViewModel: Error al obtener tareas después de autenticarse: ${tasksResult.exceptionOrNull()}")
-                            _authState.value = GlobalAuthState.UNAUTHENTICATED // Actualiza Sealed Class
+                        } else {
+                            Timber.e("AuthViewModel: User without tasks: ${tasksResult.exceptionOrNull()}")
+                            startObservingTasksUseCase()
+                            _authState.value = GlobalAuthState.AUTHENTICATED(
+                                AuthUser(
+                                    authUser.currentUser?.uid.toString(),
+                                    authUser.currentUser?.email
+                                )
+                            )
                         }
 
                     }
                 } else {
-                    // Si no hay usuario, no estamos autenticados
-                    Timber.w("AuthViewModel: Estado GLOBAL = NO AUTENTICADO")
-                    _authState.value = GlobalAuthState.UNAUTHENTICATED // Actualiza Sealed Class
+                    Timber.w("AuthViewModel: Glogal state = UNAUTHENTICATED")
+                    _authState.value = GlobalAuthState.UNAUTHENTICATED
                 }
             }
         }

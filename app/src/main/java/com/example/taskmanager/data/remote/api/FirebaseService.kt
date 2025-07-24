@@ -68,9 +68,9 @@ class FirebaseService @Inject constructor(
 
     suspend fun getAllTasksOnce(userId: String): Result<List<Task>> {
         return try {
-
+            Timber.d("Fetching all tasks for user: $userId")
             val snapshot = firebaseFirestore.collection("users").document(userId).collection("tasks").get().await()
-
+            Timber.d("Obtained ${snapshot.size()} tasks for user: $userId")
             val tasks = snapshot.documents.mapNotNull { doc ->
                 doc.toObject(Task::class.java)?.copy(taskId = doc.id)
             }

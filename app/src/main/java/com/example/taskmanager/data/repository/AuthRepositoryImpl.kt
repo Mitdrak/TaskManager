@@ -37,28 +37,13 @@ class AuthRepositoryImpl @Inject constructor(
     ): Result<Unit> {
         return try {
             Timber.d("Trying to sign in with $email")
-
-            // Sign in
             firebaseAuth.signInWithEmailAndPassword(email, password).await()
-
             val currentUser = firebaseAuth.currentUser
             if (currentUser == null) {
                 Timber.e("Error: User not found after sign in attempt")
                 return Result.failure(Exception("Error: User not found"))
             }
-
             Timber.d("Session successfully started for user: ${currentUser.email}")
-
-            // Now wait for task repository
-            /*val tasksResult = taskRepository.getAllTasks() // <- should be suspend and return Result<...>
-
-            return if (tasksResult.isSuccess) {
-                Timber.d("Successfully fetched tasks after login.")
-                Result.success(Unit)
-            } else {
-                Timber.e("Failed to fetch tasks after login.")
-                Result.failure(Exception("Failed to fetch user tasks"))
-            }*/
             Result.success(Unit)
 
         } catch (e: Exception) {
@@ -79,7 +64,6 @@ class AuthRepositoryImpl @Inject constructor(
             ).await()
             val newUserId = authResult.user?.uid
             if (newUserId != null) {
-                // Guardar el usuario en Firestore
                 val userData = mapOf(
                     "email" to email,
                     "name" to "Anonymous",
@@ -87,6 +71,7 @@ class AuthRepositoryImpl @Inject constructor(
                 )
                 firebaseFirestore.collection("users").document(newUserId).set(userData).await()
                 Timber.d("User registered successfully with ID: $newUserId")
+                authResult.user?.sendEmailVerification()
                 Result.success(Unit)
             } else {
                 Timber.e("Error obtaining user ID after sign up")
@@ -103,7 +88,6 @@ class AuthRepositoryImpl @Inject constructor(
             val currentUser = firebaseAuth.currentUser
             Timber.d("Actual user: ${currentUser?.email}")
             trySend(currentUser?.toDomain())
-            // Limpiar el flow cuando se cierra
             awaitClose { }
         }
     }
