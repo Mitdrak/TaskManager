@@ -152,6 +152,7 @@ class TaskRepositoryImpl @Inject constructor(
     override suspend fun observeTasksForDate(selectedDate: LocalDate): Flow<Result<List<Task>>> {
         val startOfDayMillis = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         val endOfDayMillis = selectedDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val result = taskDao.getTaskbyDateRange(startOfDayMillis, endOfDayMillis)
 
         return taskDao.getTaskbyDateRange(startOfDayMillis, endOfDayMillis)
             .distinctUntilChanged { old, new ->
@@ -160,6 +161,10 @@ class TaskRepositoryImpl @Inject constructor(
             }
             .map { tasks ->
                 Timber.d("Repository: ${tasks.size} tasks obtained for date: $selectedDate")
+                if (tasks.isEmpty()) {
+                    Timber.w("Repository: No tasks found for date: $selectedDate")
+                    return@map Result.failure(Exception("No tasks found for date: $selectedDate"))
+                }
                 Result.success(tasks.map { it.toTask() })
             }
     }

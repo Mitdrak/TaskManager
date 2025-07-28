@@ -42,7 +42,6 @@ class HomeViewModel @Inject constructor(
     }
 
 
-
     @RequiresApi(Build.VERSION_CODES.O)
     fun observeTasksForDate() {
         viewModelScope.launch {
@@ -61,8 +60,8 @@ class HomeViewModel @Inject constructor(
                         _tasksCompleted.value = filteredTasks
                         _tasks.value = notCompletedTasks
 
-                    }.onFailure {
-                        Timber.e("Error fetching tasks: ${it.message}")
+                    }.onFailure { throwable ->
+                        Timber.e(throwable, "Error fetching tasks: %s", throwable.message)
                     }
                 }
         }
@@ -83,11 +82,11 @@ class HomeViewModel @Inject constructor(
                 deleteAlltasksUseCase().onSuccess {
                     stopObservingTasksUseCase()
                     Timber.d("All tasks deleted successfully")
-                }.onFailure {
-                    Timber.e("Error deleting all tasks: ${it.message}")
+                }.onFailure { throwable ->
+                    Timber.e(throwable, "Error deleting all tasks: %s", throwable.message)
                 }
-            }.onFailure {
-                Timber.e("Error logging out: ${it.message}")
+            }.onFailure { throwable ->
+                Timber.e(throwable, "Error logging out: %s", throwable.message)
             }
 
         }
