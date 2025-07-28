@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
 interface TaskRepository {
-    suspend fun addTask(task: Task): Result<Unit>
+    suspend fun addTask(task: Task): Result<Task>
     suspend fun getAllTasks(): Result<Unit>
 
     suspend fun getTaskById(taskId: String): Flow<Result<Task>>

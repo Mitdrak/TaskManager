@@ -99,6 +99,7 @@ fun NewTaskScreen(
 
     val isFieldsNotEmpty = viewModel.isFieldsNotEmpty.collectAsStateWithLifecycle()
 
+    var selectedHour by remember { mutableStateOf<Calendar?>(null) } // Para la hora de la tarea
 
 
 
@@ -139,6 +140,10 @@ fun NewTaskScreen(
             if (selectedTimeEnd != null && selectedTimeEnd!! < selectedTime!!) {
                 viewModel.onUiEvent(NewTaskUiEvent.ShowSnackbar("Start time cannot be after end time"))
                 return@TimePickerDialog
+            }
+            selectedHour = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, hourOfDay)
+                set(Calendar.MINUTE, minute)
             }
             viewModel.onUiEvent(
                 NewTaskUiEvent.TimeStartChanged(
@@ -573,7 +578,7 @@ fun NewTaskScreen(
             //Button to save task
             Button(
                 onClick = {
-                    viewModel.onUiEvent(NewTaskUiEvent.AddTask)
+                    viewModel.onUiEvent(NewTaskUiEvent.AddTask(selectedHour?.timeInMillis))
                 },
                 enabled = isFieldsNotEmpty.value,
                 shape = RoundedCornerShape(16.dp),

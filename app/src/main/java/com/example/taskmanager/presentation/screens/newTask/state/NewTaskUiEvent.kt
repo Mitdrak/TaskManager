@@ -9,5 +9,5 @@ sealed class NewTaskUiEvent {
     data class TaskColorChanged(val inputValue: String) : NewTaskUiEvent()
     data class PriorityChanged(val inputValue: String) : NewTaskUiEvent()
     data class ShowSnackbar(val message: String) : NewTaskUiEvent()
-    object AddTask : NewTaskUiEvent()
+    data class AddTask(val time: Long?) : NewTaskUiEvent()
 }

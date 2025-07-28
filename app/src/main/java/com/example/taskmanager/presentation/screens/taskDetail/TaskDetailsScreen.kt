@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
@@ -127,6 +128,9 @@ fun TaskDetailsScreen(
         },
         saveChanges = {
             viewModel.onUiEvent(TaskDetailUiEvent.SaveChanges)
+        },
+        addNotification = {
+            viewModel.onUiEvent(TaskDetailUiEvent.AddNotification)
         }
 
     )
@@ -152,6 +156,7 @@ fun TaskDetailsContent(
     enableEdting: () -> Unit,
     saveChanges: () -> Unit,
     cancelEditing: () -> Unit,
+    addNotification: () -> Unit,
     onDateChange: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -248,6 +253,20 @@ fun TaskDetailsContent(
                         contentDescription = "Delete Task", tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
+            }
+            IconButton(
+                onClick = { addNotification() },
+                modifier = Modifier
+                    .padding(8.dp)
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Notifications,
+                    contentDescription = "Delete Task", tint = MaterialTheme.colorScheme.onPrimary
+                )
             }
             IconButton(
                 onClick = {
@@ -790,7 +809,9 @@ fun TaskDetailContentPreview() {
             onTimeEndChange = {},
             onDescriptionChange = {},
             saveChanges = {},
-            onDeleteTask = {}
+            onDeleteTask = {},
+            addNotification = { }
+
         )
     }
 }
@@ -837,7 +858,8 @@ fun TaskDetailContentPreview2() {
             onTimeEndChange = {},
             onDescriptionChange = {},
             saveChanges = {},
-            onDeleteTask = {}
+            onDeleteTask = {},
+            addNotification = { }
         )
     }
 }

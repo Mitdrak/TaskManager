@@ -1,5 +1,6 @@
 package com.example.taskmanager.presentation.screens.newTask
 
+import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
@@ -13,6 +14,7 @@ import com.example.taskmanager.presentation.screens.newTask.state.NewTaskState
 import com.example.taskmanager.presentation.screens.newTask.state.NewTaskUiEvent
 import com.google.firebase.Timestamp
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +34,8 @@ import javax.inject.Inject
 @HiltViewModel
 class NewTaskViewModel @Inject constructor(
     private val addTaskUseCase: addTaskUseCase,
-    private val userSessionManager: UserSessionManager
+    private val userSessionManager: UserSessionManager,
+    @ApplicationContext private val applicationContext: Context
 ) : ViewModel() {
     private val _newTaskState = MutableStateFlow(NewTaskState())
     val newTaskState: StateFlow<NewTaskState> = _newTaskState.asStateFlow()
@@ -46,10 +49,11 @@ class NewTaskViewModel @Inject constructor(
         false
     )
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun onUiEvent(newTaskUiEvent: NewTaskUiEvent) {
         when (newTaskUiEvent) {
-            NewTaskUiEvent.AddTask -> {
-                addTask()
+            is NewTaskUiEvent.AddTask -> {
+                addTask(newTaskUiEvent.time)
             }
 
 
@@ -104,7 +108,8 @@ class NewTaskViewModel @Inject constructor(
         }
     }
 
-    private fun addTask() {
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun addTask(time: Long?) {
         if (!fieldsNotEmpty()) {
             _newTaskState.value = _newTaskState.value.copy(
                 isTaskAdded = false,
@@ -156,6 +161,7 @@ class NewTaskViewModel @Inject constructor(
             }
         }
     }
+
 
     private fun fieldsNotEmpty(): Boolean {
         return newTaskState.value.title.isNotEmpty() && newTaskState.value.description.isNotEmpty() && newTaskState.value.timeStart.isNotEmpty() && newTaskState.value.timeEnd.isNotEmpty() && newTaskState.value.date.isNotEmpty()

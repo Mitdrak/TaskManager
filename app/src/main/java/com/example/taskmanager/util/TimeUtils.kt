@@ -4,10 +4,17 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.example.taskmanager.domain.model.Task
 import com.google.firebase.Timestamp
+import timber.log.Timber
+import java.text.ParseException
+import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 object TimeUtils {
     fun parseTimeToMinutes(time: String): Int {
@@ -84,6 +91,65 @@ object TimeUtils {
         val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy").withZone(zone)
         val localDate = LocalDate.parse(dateString, formatter)
         return localDate.atStartOfDay(zone).toInstant().toEpochMilli()
+    }
+    private val TIME_FORMATS = listOf(
+        SimpleDateFormat("hh:mm a", Locale.getDefault()), // For "04:30 PM", "10:00 AM"
+        SimpleDateFormat("HH:mm", Locale.getDefault())    // For "16:30", "08:00"
+    )
+    private const val TIME_FORMAT_STRING = "hh:mm a"
+    fun convertTimeToMillis(timeString: String?, firebaseTimestamp: Timestamp?): Long? {
+        if (timeString == null || firebaseTimestamp == null) {
+            Timber.w("convertTimeToMillis received null input: timeString=$timeString, firebaseTimestamp=$firebaseTimestamp")
+            return null
+        }
+
+        try {
+            // 1. Get the date part from the Firebase Timestamp
+            val dateFromFirebase: Date = firebaseTimestamp.toDate() // This gives you a java.util.Date object
+
+            // 2. Parse the time string into a Date object (this will use a default date like Jan 1, 1970)
+            var parsedTime: Date? = null
+            var parseException: ParseException? = null
+
+            // Try parsing with different formats
+            for (sdf in TIME_FORMATS) {
+                try {
+                    parsedTime = sdf.parse(timeString)
+                    if (parsedTime != null) {
+                        break // Successfully parsed, exit loop
+                    }
+                } catch (e: ParseException) {
+                    parseException = e // Store the last exception if all fail
+                }
+            }
+
+            if (parsedTime == null) {
+                Timber.e(parseException, "Failed to parse time string '$timeString' with available formats.")
+                return null
+            }
+
+            // 3. Create a Calendar instance and set its date to the date from Firebase
+            val calendar = Calendar.getInstance()
+            calendar.time = dateFromFirebase // Set the calendar to the date from Firebase Timestamp
+            calendar.timeZone = TimeZone.getDefault() // Ensure it respects local timezone
+
+            // 4. Set the hour, minute, second, and millisecond from the parsed time into the calendar
+            val timeCalendar = Calendar.getInstance()
+            timeCalendar.time = parsedTime // Use the parsed time here
+            timeCalendar.timeZone = TimeZone.getDefault() // Use the same timezone
+
+            calendar.set(Calendar.HOUR_OF_DAY, timeCalendar.get(Calendar.HOUR_OF_DAY))
+            calendar.set(Calendar.MINUTE, timeCalendar.get(Calendar.MINUTE))
+            calendar.set(Calendar.SECOND, 0) // Reset seconds
+            calendar.set(Calendar.MILLISECOND, 0) // Reset milliseconds
+
+            // 5. Return the combined timestamp in milliseconds
+            return calendar.timeInMillis
+
+        } catch (e: Exception) { // Catch broader exceptions that might occur during date operations
+            Timber.e(e, "An error occurred during convertTimeToMillis for timeString: $timeString, firebaseTimestamp: $firebaseTimestamp")
+            return null
+        }
     }
 }
 

@@ -30,9 +30,10 @@ class FirebaseService @Inject constructor(
     private val _firebaseTasks = MutableStateFlow<List<TaskEntity>>(emptyList())
     val firebaseTasks: StateFlow<List<TaskEntity>> = _firebaseTasks.asStateFlow()
 
-    fun addTaskToFirebase(task: Task): Result<Unit> {
+    fun addTaskToFirebase(task: Task): Result<Task> {
         return try {
             Timber.d("Adding task: $task")
+            var taskIdReturned = ""
             val collection =
                 firebaseFirestore.collection("users").document(task.userId).collection("tasks")
                     .add(task)
@@ -43,11 +44,24 @@ class FirebaseService @Inject constructor(
                     "taskId",
                     taskId
                 )
+                taskIdReturned = taskId
             }
             collection.addOnFailureListener {
                 Timber.d("Task addition failed")
             }
-            Result.success(Unit)
+            Result.success(
+                Task(
+                    taskId = taskIdReturned,
+                    userId = task.userId,
+                    title = task.title,
+                    description = task.description,
+                    dateStart = task.dateStart,
+                    timeStart = task.timeStart,
+                    timeEnd = task.timeEnd,
+                    priority = task.priority,
+                    completed = task.completed
+                )
+            )
         } catch (e: Exception) {
             Timber.e("Error adding task: ${e.message}")
             Result.failure(e)

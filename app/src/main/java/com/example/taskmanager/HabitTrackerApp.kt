@@ -1,13 +1,28 @@
 package com.example.taskmanager
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
+import androidx.work.Configuration
+import androidx.work.ListenableWorker
+import androidx.work.WorkerFactory
+import androidx.work.WorkerParameters
+import com.example.taskmanager.data.local.workers.TaskReminderWorker
+import com.example.taskmanager.domain.usecase.task.getTaskByIdUseCase
+import com.example.taskmanager.util.NotificationHelper
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
+import javax.inject.Inject
 
 
 @HiltAndroidApp
-class HabitTrackerApp : Application() {
+class HabitTrackerApp : Application(), Configuration.Provider {
+    @Inject
+    lateinit var workerFactory: CustomWorkerFactory
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
+
     override fun onCreate() {
         super.onCreate()
 
@@ -24,6 +39,20 @@ class HabitTrackerApp : Application() {
 
     }
 
+
+}
+
+class CustomWorkerFactory @Inject constructor(
+    private val getTaskByIdUseCase: getTaskByIdUseCase,
+    private val notifactionHelper: NotificationHelper
+): WorkerFactory(){
+    override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker =
+        TaskReminderWorker(
+            appContext,
+            workerParameters,
+            getTaskByIdUseCase,
+            notifactionHelper
+        )
 }
 
 class ReleaseTree : Timber.Tree() {

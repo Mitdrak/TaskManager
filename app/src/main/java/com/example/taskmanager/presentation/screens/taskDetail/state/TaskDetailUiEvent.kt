@@ -11,6 +11,8 @@ sealed class TaskDetailUiEvent {
     object ToggleEditMode : TaskDetailUiEvent()
     object SaveChanges : TaskDetailUiEvent()
 
+    object AddNotification : TaskDetailUiEvent()
+
     object DeleteTask : TaskDetailUiEvent()
     object CancelEdit : TaskDetailUiEvent()
 }

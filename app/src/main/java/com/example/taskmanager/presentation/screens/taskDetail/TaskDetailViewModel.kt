@@ -1,10 +1,17 @@
 package com.example.taskmanager.presentation.screens.taskDetail
 
+import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.example.taskmanager.data.local.workers.TaskReminderWorker
+import com.example.taskmanager.domain.manager.UserSessionManager
 import com.example.taskmanager.domain.model.Task
 import com.example.taskmanager.domain.usecase.task.deleteTaskByIdUseCase
 import com.example.taskmanager.domain.usecase.task.getTaskByIdUseCase
@@ -13,11 +20,13 @@ import com.example.taskmanager.presentation.screens.taskDetail.state.TaskDetailS
 import com.example.taskmanager.presentation.screens.taskDetail.state.TaskDetailUiEvent
 import com.example.taskmanager.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 
@@ -26,7 +35,9 @@ class TaskDetailsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getTaskByIdUseCase: getTaskByIdUseCase,
     private val updateTaskUseCase: updateTaskUseCase,
-    private val deleteTaskByIdUseCase: deleteTaskByIdUseCase
+    private val deleteTaskByIdUseCase: deleteTaskByIdUseCase,
+    private val userSessionManager: UserSessionManager,
+    @ApplicationContext private val applicationContext: Context
 ) : ViewModel() {
     private val taskId: String? = savedStateHandle["taskId"] ?: ""
 
@@ -163,7 +174,53 @@ class TaskDetailsViewModel @Inject constructor(
             TaskDetailUiEvent.DeleteTask -> {
                 deleteTask()
             }
+
+            TaskDetailUiEvent.AddNotification ->{
+                val timeNotification =TimeUtils.convertTimeToMillis(
+                    _taskDetailState.value.timeStart,
+                    _taskDetailState.value.taskDueDate
+                )
+                if (timeNotification != null) {
+                    scheduleTaskStartNotification(_task.value.taskId, timeNotification)
+                    Timber.d("Task start notification scheduled for task ID: ${_task.value.taskId} at $timeNotification")
+                } else {
+                    Timber.e("Error scheduling task start notification: Invalid time format or date.")
+                }
+
+            }
         }
+    }
+    private fun scheduleTaskStartNotification(taskId: String, taskStartHourMillis: Long) {
+        val currentTimeMillis = System.currentTimeMillis()
+        var delayMillis = taskStartHourMillis - currentTimeMillis
+
+        // Si la hora de inicio ya pasó, dispara la notificación inmediatamente (retraso 0).
+        if (delayMillis < 0) {
+            delayMillis = 0L // Importante: usar L para Long
+            Timber.w("Task start hour for ID $taskId is in the past. Scheduling notification immediately.")
+        }
+
+        // Crear los datos de entrada para el Worker
+        val inputData = Data.Builder()
+            .putString(TaskReminderWorker.TASK_ID_KEY, taskId)
+            .build()
+
+        // Crear la solicitud de trabajo One-Time
+        val notificationWorkRequest = OneTimeWorkRequestBuilder<TaskReminderWorker>()
+            .setInputData(inputData)
+            .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+            .addTag("task_start_notification_$taskId") // Etiqueta única para cada tarea
+            .build()
+
+        // Encolar el trabajo con WorkManager
+        // Usar ExistingWorkPolicy.REPLACE para reemplazar cualquier trabajo pendiente
+        // con la misma ID única si la tarea se edita y se vuelve a guardar.
+        WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+            "task_start_notification_$taskId", // Nombre único para esta tarea
+            ExistingWorkPolicy.REPLACE,
+            notificationWorkRequest
+        )
+        Timber.d("Task 'start time' notification scheduled for task ID: $taskId with delay: $delayMillis ms")
     }
     private fun deleteTask(){
         viewModelScope.launch {
