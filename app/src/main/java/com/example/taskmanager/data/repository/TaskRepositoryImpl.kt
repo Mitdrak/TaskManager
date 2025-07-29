@@ -3,7 +3,6 @@ package com.example.taskmanager.data.repository
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.example.taskmanager.data.local.dao.TaskDao
-import com.example.taskmanager.data.local.entity.TaskEntity
 import com.example.taskmanager.data.local.mapper.toTask
 import com.example.taskmanager.data.remote.api.FirebaseService
 import com.example.taskmanager.domain.mapper.toEntity
@@ -34,7 +33,7 @@ class TaskRepositoryImpl @Inject constructor(
     private val firebaseAuth: FirebaseAuth
 ) : TaskRepository {
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    val allTasksFromRoom: Flow<List<TaskEntity>> = taskDao.getAllTasks()
+
     private var observerJob: Job? = null
     override suspend fun stopObservingTasks() {
         observerJob?.cancel()
@@ -42,13 +41,12 @@ class TaskRepositoryImpl @Inject constructor(
         Timber.d("Repository: Stopped observing tasks")
     }
     override suspend fun startObservingTasks() {
-        // Cancel any existing observer
         observerJob?.cancel()
 
         repositoryScope.launch {
             val userId = firebaseAuth.currentUser?.uid
             if (userId != null) {
-                Timber.d("Repository: Starting to observe tasks for user: $userId")
+                Timber.d("Repository: Starting to observe tasks for user: ${userId}")
 
                 observerJob = launch {
                     firebaseService.observeAllUserTasks(userId).collect { result ->
@@ -83,7 +81,7 @@ class TaskRepositoryImpl @Inject constructor(
                                 }
                             }
                         }.onFailure { error ->
-                            Timber.e("Repository: Error: ${error.message}")
+                            Timber.e(error, "Repository: Error: %s", error.message)
                         }
                     }
                 }

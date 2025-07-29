@@ -27,6 +27,7 @@ services = "4.4.2"
 kotlin = "2.1.10"
 timber = "5.0.1"
 truth = "1.4.4"
+turbine = "1.2.1"
 workRuntimeKtx = "2.9.0"
 hilt = "2.52" # Use the latest version of Hilt
 agp = "8.11.0"
@@ -78,6 +79,8 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 androidx-multidex = { group = "androidx.multidex", name = "multidex", version.ref = "multidex" }
 truth = { module = "com.google.truth:truth", version.ref = "truth" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
