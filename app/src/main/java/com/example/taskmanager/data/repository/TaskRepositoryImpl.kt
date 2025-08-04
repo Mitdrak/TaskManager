@@ -10,12 +10,14 @@ import com.example.taskmanager.domain.model.Task
 import com.example.taskmanager.domain.repository.TaskRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentChange
+import com.google.protobuf.LazyStringArrayList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -40,6 +42,7 @@ class TaskRepositoryImpl @Inject constructor(
         observerJob = null
         Timber.d("Repository: Stopped observing tasks")
     }
+
     override suspend fun startObservingTasks() {
         observerJob?.cancel()
 
@@ -150,21 +153,25 @@ class TaskRepositoryImpl @Inject constructor(
     override suspend fun observeTasksForDate(selectedDate: LocalDate): Flow<Result<List<Task>>> {
         val startOfDayMillis = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         val endOfDayMillis = selectedDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        val result = taskDao.getTaskbyDateRange(startOfDayMillis, endOfDayMillis)
+        try {
+            return taskDao.getTaskbyDateRange(startOfDayMillis, endOfDayMillis)
 
-        return taskDao.getTaskbyDateRange(startOfDayMillis, endOfDayMillis)
-            .distinctUntilChanged { old, new ->
-                // Only trigger if the actual content changed, not just any task update
-                old.size == new.size && old.containsAll(new)
-            }
-            .map { tasks ->
-                Timber.d("Repository: ${tasks.size} tasks obtained for date: $selectedDate")
-                if (tasks.isEmpty()) {
-                    Timber.w("Repository: No tasks found for date: $selectedDate")
-                    return@map Result.failure(Exception("No tasks found for date: $selectedDate"))
+                .distinctUntilChanged { old, new ->
+                    // Only trigger if the actual content changed, not just any task update
+                    old.size == new.size && old.containsAll(new)
                 }
-                Result.success(tasks.map { it.toTask() })
-            }
+                .map { tasks ->
+                    Timber.d("Repository: ${tasks.size} tasks obtained for date: $selectedDate")
+                    if (tasks.isEmpty()) {
+                        Timber.w("Repository: No tasks found for date: $selectedDate")
+                        Result.success(LazyStringArrayList.emptyList())
+                    }
+                    Result.success(tasks.map { it.toTask() })
+                }
+        } catch (e: Exception) {
+            Timber.e(e, "Repository: Error observing tasks for date: $selectedDate")
+            return flowOf(Result.failure(e))
+        }
     }
 
     override suspend fun updateTask(task: Task): Result<Unit> {

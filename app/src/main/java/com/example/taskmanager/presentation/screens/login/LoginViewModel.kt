@@ -26,7 +26,6 @@ class LoginViewModel @Inject constructor(
 ) : ViewModel() {
     private val _loginState = MutableStateFlow(LoginState())
 
-    /*val state: StateFlow<LoginState> = _loginState.asStateFlow()*/
     val state = _loginState.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
@@ -83,16 +82,12 @@ class LoginViewModel @Inject constructor(
                         email = _loginState.value.emailOrMobile,
                         password = _loginState.value.password
                     )
-                    /*val result = loginWithEmailAndPasswordUseCase(
-                        email = "sergio.acs@hotmail.com",
-                        password = "123123"
-                    )*/
                     result.onSuccess {
                         Timber.d("Login successful")
                         _loginState.update {
                             it.copy(
                                 isLoginSuccessful = true,
-                                isLoading = false
+                                isLoading = true
                             )
                         }
                     }.onFailure {

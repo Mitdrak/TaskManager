@@ -3,6 +3,11 @@ package com.example.taskmanager
 import android.app.Application
 import android.content.Context
 import android.util.Log
+import android.view.ContextThemeWrapper
+import androidx.window.core.layout.WindowHeightSizeClass
+import androidx.window.core.layout.WindowSizeClass
+import androidx.window.core.layout.WindowWidthSizeClass
+import androidx.window.layout.WindowMetricsCalculator
 import androidx.work.Configuration
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
@@ -41,7 +46,18 @@ class HabitTrackerApp : Application(), Configuration.Provider {
 
 
 }
+fun compactScreen() : Boolean {
+    val metrics = WindowMetricsCalculator.getOrCreate().computeCurrentWindowMetrics(
+        context = ContextThemeWrapper(Application(), R.style.Theme_TaskManager)
+    )
+    val width = metrics.bounds.width()
+    val height = metrics.bounds.height()
+    val density = Application().resources.displayMetrics.density
+    val windowSizeClass = WindowSizeClass.compute(width/density, height/density)
 
+    return windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT ||
+            windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT
+}
 class CustomWorkerFactory @Inject constructor(
     private val getTaskByIdUseCase: getTaskByIdUseCase,
     private val notifactionHelper: NotificationHelper

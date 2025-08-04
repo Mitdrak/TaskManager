@@ -3,6 +3,7 @@ package com.example.taskmanager.presentation.screens.tasks
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,6 +52,7 @@ fun TaskScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
     navigateToHome: () -> Unit,
+    navigateToTaskDetails: (String) -> Unit = {},
     navigateToLogin: () -> Unit
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -98,19 +100,6 @@ fun TaskScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                    /*IconButton(
-                        onClick = { scope.launch { drawerState.open() } },
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = "Menu",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }*/
                     Text(
                         text = "Tasks",
                         style = MaterialTheme.typography.headlineLarge,
@@ -146,6 +135,11 @@ fun TaskScreen(
                                 .fillMaxWidth()
                                 .height(80.dp)
                                 .padding(16.dp)
+                                .clickable(
+                                    onClick = {
+                                        navigateToTaskDetails(tasks[index].taskId)
+                                    }
+                                )
                         ) {
                             Checkbox(
                                 checked = tasks[index].completed,
@@ -184,6 +178,11 @@ fun TaskScreen(
                                 .fillMaxWidth()
                                 .height(80.dp)
                                 .padding(16.dp)
+                                .clickable(
+                                    onClick = {
+                                        navigateToTaskDetails(tasks[index].taskId)
+                                    }
+                                )
                         ) {
                             Checkbox(
                                 checked = tasksCompleted[index].completed,

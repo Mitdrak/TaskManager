@@ -118,6 +118,9 @@ fun NavGraphBuilder.mainNavGraph(
                 },
                 navigateToLogin = {
                     onNavigateToAuthGraph()
+                },
+                navigateToTaskDetails = { taskId ->
+                    navController.navigate(Screen.TaskDetails.createRoute(taskId))
                 }
             )
         }

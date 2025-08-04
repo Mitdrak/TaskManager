@@ -79,8 +79,8 @@ class HomeViewModel @Inject constructor(
             val result = logOutUseCase()
             result.onSuccess {
                 Timber.d("User logged out successfully")
+                stopObservingTasksUseCase()
                 deleteAlltasksUseCase().onSuccess {
-                    stopObservingTasksUseCase()
                     Timber.d("All tasks deleted successfully")
                 }.onFailure { throwable ->
                     Timber.e(throwable, "Error deleting all tasks: %s", throwable.message)

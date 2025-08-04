@@ -55,7 +55,7 @@ class CalendarViewModel @Inject constructor(
                     Timber.d("Tasks for date ${selectedDate.value}: ${result.getOrDefault(emptyList())}")
                     _tasks.value = result.getOrDefault(emptyList())
                 }.onFailure { error ->
-                    Timber.e("Error fetching tasks for date $selectedDate: $error")
+                    Timber.e(error, "No task at date ${selectedDate.value}: ", error.message)
                 }
             }
         }

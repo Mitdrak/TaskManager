@@ -144,7 +144,6 @@ fun HomeScreen(
                             onDragEnd = {
                                 if (offsetX < -swipeThreshold) {
                                     onSwipe()
-                                    println("Swipe left")
                                 }
                                 offsetX = 0f
                             },
@@ -213,7 +212,7 @@ fun HomeScreen(
                             .padding(8.dp)
                             .clickable(
                                 onClick = {
-                                    println("Date")
+                                    onSwipe()
                                 },
                             )
                     )

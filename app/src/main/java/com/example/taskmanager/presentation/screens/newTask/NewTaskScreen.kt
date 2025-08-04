@@ -20,9 +20,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.ArrowBack
@@ -64,7 +66,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.taskmanager.presentation.screens.newTask.state.NewTaskUiEvent
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
 
@@ -89,13 +90,6 @@ fun NewTaskScreen(
     var selectedTime by remember { mutableStateOf<LocalTime?>(null) }
     var selectedTimeEnd by remember { mutableStateOf<LocalTime?>(null) }
 
-    // Format date and time
-    val formattedDate =
-        selectedDate?.format(DateTimeFormatter.ofPattern("dd MMM yyyy")) ?: "Select date"
-    val formattedTime =
-        selectedTime?.format(DateTimeFormatter.ofPattern("hh:mm a")) ?: "Select time"
-    val formattedTimeEnd =
-        selectedTimeEnd?.format(DateTimeFormatter.ofPattern("hh:mm a")) ?: "Select time"
 
     val isFieldsNotEmpty = viewModel.isFieldsNotEmpty.collectAsStateWithLifecycle()
 
@@ -249,6 +243,7 @@ fun NewTaskScreen(
             modifier = Modifier
                 .padding(it)
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .background(MaterialTheme.colorScheme.background),
         ) {
             Text(
