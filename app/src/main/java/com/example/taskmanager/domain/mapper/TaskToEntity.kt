@@ -15,6 +15,7 @@ fun Task.toEntity(): TaskEntity {
         completed = completed,
         priority = priority,
         taskColor = taskColor,
-        createdAt = createdAt
+        createdAt = createdAt,
+        notificationEnabled = notificationEnabled
     )
 }

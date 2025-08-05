@@ -6,14 +6,11 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.Data
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import com.example.taskmanager.data.local.workers.TaskReminderWorker
 import com.example.taskmanager.domain.manager.UserSessionManager
 import com.example.taskmanager.domain.model.Task
 import com.example.taskmanager.domain.usecase.task.deleteTaskByIdUseCase
+import com.example.taskmanager.domain.usecase.task.disableNotificationUseCase
+import com.example.taskmanager.domain.usecase.task.enableNotificationUseCase
 import com.example.taskmanager.domain.usecase.task.getTaskByIdUseCase
 import com.example.taskmanager.domain.usecase.task.updateTaskUseCase
 import com.example.taskmanager.presentation.screens.taskDetail.state.TaskDetailState
@@ -26,7 +23,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 
@@ -37,6 +33,8 @@ class TaskDetailsViewModel @Inject constructor(
     private val updateTaskUseCase: updateTaskUseCase,
     private val deleteTaskByIdUseCase: deleteTaskByIdUseCase,
     private val userSessionManager: UserSessionManager,
+    private val enableNotificationUseCase: enableNotificationUseCase,
+    private val disableNotificationUseCase: disableNotificationUseCase,
     @ApplicationContext private val applicationContext: Context
 ) : ViewModel() {
     private val taskId: String? = savedStateHandle["taskId"] ?: ""
@@ -54,6 +52,7 @@ class TaskDetailsViewModel @Inject constructor(
             timeStart = "",
             timeEnd = "",
             taskPriority = "Normal",
+            notificationEnabled = true,
             isCompleted = false,
             isEditing = false
         )
@@ -82,7 +81,8 @@ class TaskDetailsViewModel @Inject constructor(
                         taskColor = task.taskColor,
                         priority = task.priority,
                         completed = task.completed,
-                        createdAt = task.createdAt
+                        createdAt = task.createdAt,
+                        notificationEnabled = task.notificationEnabled
                     )
                     _taskDetailState.value = _taskDetailState.value.copy(
                         taskId = task.taskId,
@@ -92,7 +92,8 @@ class TaskDetailsViewModel @Inject constructor(
                         timeStart = TimeUtils.formatTimeWithAmPm(task.timeStart),
                         timeEnd = TimeUtils.formatTimeWithAmPm(task.timeEnd),
                         taskPriority = task.priority,
-                        isCompleted = task.completed
+                        isCompleted = task.completed,
+                        notificationEnabled = task.notificationEnabled
                     )
                     _taskDetailState.value = _taskDetailState.value.copy(isLoading = false)
                 }.onFailure { exception ->
@@ -175,60 +176,73 @@ class TaskDetailsViewModel @Inject constructor(
                 deleteTask()
             }
 
-            TaskDetailUiEvent.AddNotification ->{
-                val timeNotification =TimeUtils.convertTimeToMillis(
-                    _taskDetailState.value.timeStart,
-                    _taskDetailState.value.taskDueDate
-                )
-                if (timeNotification != null) {
-                    scheduleTaskStartNotification(_task.value.taskId, timeNotification)
-                    Timber.d("Task start notification scheduled for task ID: ${_task.value.taskId} at $timeNotification")
+            TaskDetailUiEvent.AddNotification -> {
+                if (_taskDetailState.value.notificationEnabled) {
+                    disableNotification()
                 } else {
-                    Timber.e("Error scheduling task start notification: Invalid time format or date.")
+                    enableNotification()
                 }
-
             }
         }
     }
-    private fun scheduleTaskStartNotification(taskId: String, taskStartHourMillis: Long) {
-        val currentTimeMillis = System.currentTimeMillis()
-        var delayMillis = taskStartHourMillis - currentTimeMillis
 
-        // Si la hora de inicio ya pasó, dispara la notificación inmediatamente (retraso 0).
-        if (delayMillis < 0) {
-            delayMillis = 0L // Importante: usar L para Long
-            Timber.w("Task start hour for ID $taskId is in the past. Scheduling notification immediately.")
+    private fun enableNotification() {
+        viewModelScope.launch {
+            val updatedTask = _task.value.copy(
+                title = _taskDetailState.value.taskTitle,
+                description = _taskDetailState.value.taskDescription,
+                dateStart = _taskDetailState.value.taskDueDate,
+                timeStart = _taskDetailState.value.timeStart.replace("AM", "").replace("PM", "").trim(),
+                timeEnd = _taskDetailState.value.timeEnd.replace("AM", "").replace("PM", "").trim(),
+                priority = _taskDetailState.value.taskPriority,
+                completed = _taskDetailState.value.isCompleted,
+                notificationEnabled = true
+            )
+            val result = enableNotificationUseCase(
+                updatedTask
+            )
+            result.onSuccess {
+                Timber.d("Notification enabled successfully for task: ${_task.value.taskId}")
+                _taskDetailState.value = _taskDetailState.value.copy(
+                    notificationEnabled = true
+                )
+            }.onFailure { exception ->
+                Timber.e(exception, "Error enabling notification: ${exception.message}")
+            }
         }
-
-        // Crear los datos de entrada para el Worker
-        val inputData = Data.Builder()
-            .putString(TaskReminderWorker.TASK_ID_KEY, taskId)
-            .build()
-
-        // Crear la solicitud de trabajo One-Time
-        val notificationWorkRequest = OneTimeWorkRequestBuilder<TaskReminderWorker>()
-            .setInputData(inputData)
-            .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
-            .addTag("task_start_notification_$taskId") // Etiqueta única para cada tarea
-            .build()
-
-        // Encolar el trabajo con WorkManager
-        // Usar ExistingWorkPolicy.REPLACE para reemplazar cualquier trabajo pendiente
-        // con la misma ID única si la tarea se edita y se vuelve a guardar.
-        WorkManager.getInstance(applicationContext).enqueueUniqueWork(
-            "task_start_notification_$taskId", // Nombre único para esta tarea
-            ExistingWorkPolicy.REPLACE,
-            notificationWorkRequest
-        )
-        Timber.d("Task 'start time' notification scheduled for task ID: $taskId with delay: $delayMillis ms")
     }
-    private fun deleteTask(){
+
+    private fun disableNotification() {
+        viewModelScope.launch {
+            val updatedTask = _task.value.copy(
+                title = _taskDetailState.value.taskTitle,
+                description = _taskDetailState.value.taskDescription,
+                dateStart = _taskDetailState.value.taskDueDate,
+                timeStart = _taskDetailState.value.timeStart.replace("AM", "").replace("PM", "").trim(),
+                timeEnd = _taskDetailState.value.timeEnd.replace("AM", "").replace("PM", "").trim(),
+                priority = _taskDetailState.value.taskPriority,
+                completed = _taskDetailState.value.isCompleted,
+                notificationEnabled = false
+            )
+            val result = disableNotificationUseCase(updatedTask)
+            result.onSuccess {
+                Timber.d("Notification disabled successfully for task: ${_task.value.taskId}")
+                _taskDetailState.value = _taskDetailState.value.copy(
+                    notificationEnabled = false
+                )
+            }.onFailure { exception ->
+                Timber.e(exception, "Error disabling notification: ${exception.message}")
+            }
+        }
+    }
+
+
+    private fun deleteTask() {
         viewModelScope.launch {
             deleteTaskByIdUseCase(task.value.taskId).onSuccess {
                 Timber.d("Task deleted successfully: ${task.value.taskId}")
                 _taskDetailState.value = _taskDetailState.value.copy(
-                    isTaskDeleted = true,
-                    isEditing = false
+                    isTaskDeleted = true, isEditing = false
                 )
             }.onFailure { exception ->
                 Timber.e("Error deleting task: ${exception.message}")

@@ -50,32 +50,35 @@ class TaskReminderWorker @AssistedInject constructor(
             }
         }
         return try {
-            // 1. Obtener la tarea UNA SOLA VEZ del UseCase usando .first()
-            // Esto suspende hasta que el Flow emita su primer valor y luego lo devuelve.
-            val result = getTaskByIdUseCase(taskId).first() // <-- ¡Aquí está el cambio clave!
 
-            result.onSuccess { task ->
-                if (task != null) { // Asegúrate de que la tarea no sea nula si tu Flow emite Task?
-                    notifactionHelper.showTaskStartNotification(
-                        taskId = task.taskId, // Asumo que tu Task tiene un campo 'id'
-                        taskTitle = task.title,
-                        taskDescription = task.description,
-                    )
-                    Timber.d("Notification shown for task: ${task.title}")
-                    Result.success() // La tarea se encontró y la notificación se mostró
-                } else {
-                    Timber.w("Task with ID $taskId not found by UseCase for 'now' reminder.")
-                    Result.failure() // La tarea no se encontró
+            val result = getTaskByIdUseCase(taskId).first()
+
+            result.fold(
+                onSuccess = { task ->
+                    if (task != null) {
+                        // Task found, show the notification
+                        notifactionHelper.showTaskStartNotification(
+                            taskId = task.taskId,
+                            taskTitle = task.title,
+                            taskDescription = task.description,
+                        )
+                        Timber.d("Notification shown for task: ${task.title}")
+                        Result.success()
+                    } else {
+                        // Task not found
+                        Timber.w("Task with ID $taskId not found by UseCase.")
+                        Result.failure()
+                    }
+                },
+                onFailure = { e ->
+                    // Error fetching the task
+                    Timber.e(e, "Error fetching task with ID $taskId from UseCase.")
+                    Result.failure()
                 }
-            }.onFailure { e ->
-                Timber.e(e, "Error fetching task with ID $taskId from UseCase.")
-                Result.failure() // Fallo al obtener la tarea
-            }
-            Result.success() // Si todo salió bien, devuelve éxito
+            )
         } catch (e: Exception) {
-            // Captura cualquier otra excepción durante el proceso (ej. red, base de datos)
             Timber.e(e, "Unexpected error in TaskReminderWorker for taskId: $taskId.")
-            Result.retry() // Reintentar si es un error transitorio
+            Result.retry()
         }
     }
 

@@ -11,6 +11,7 @@ data class TaskDetailState(
     val timeEnd: String = "",
     val taskPriority: String = "Normal",
     val isCompleted: Boolean = false,
+    val notificationEnabled: Boolean = true,
     val isTaskDeleted: Boolean = false,
     val isEditing: Boolean = false,
     val errorState: TaskDetailErrorState = TaskDetailErrorState(),

@@ -16,4 +16,11 @@ interface TaskRepository {
     suspend fun deleteAllTasks(): Result<Unit>
     suspend fun startObservingTasks()
     suspend fun stopObservingTasks()
+    fun updateTaskNotifcation(task: Task)
+
+    fun cancelTaskNotification(taskId: String)
+
+    suspend fun enableNotification(task: Task): Result<Unit>
+    suspend fun disableNotification(task: Task): Result<Unit>
+
 }

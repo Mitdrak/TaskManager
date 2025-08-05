@@ -10,8 +10,11 @@ import com.example.taskmanager.presentation.screens.login.state.LoginState
 import com.example.taskmanager.presentation.screens.login.state.LoginUiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -33,11 +36,19 @@ class LoginViewModel @Inject constructor(
     )
     private val _snackbarEvent = Channel<String>()
     val snackbarEvent = _snackbarEvent.receiveAsFlow()
+    // In your ViewModel
+    private val _permissionRequestEvents = MutableSharedFlow<Unit>()
+    val permissionRequestEvents: SharedFlow<Unit> = _permissionRequestEvents.asSharedFlow()
 
     init {
         observeAuthState()
     }
-
+    fun onEnableNotificationsClicked() {
+        // You might check if permission is needed and then emit the event
+        viewModelScope.launch {
+            _permissionRequestEvents.emit(Unit)
+        }
+    }
     private fun observeAuthState() {
         viewModelScope.launch {
             observeAuthStateUseCase().collect { authUser ->

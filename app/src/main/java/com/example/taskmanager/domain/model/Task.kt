@@ -13,5 +13,6 @@ data class Task(
     val taskColor: String = "#FFFFFF", // Default color white
     val priority: String = "Low", // Default priority
     val completed: Boolean = false,
+    val notificationEnabled: Boolean = true,
     val createdAt: Long = System.currentTimeMillis(),
 )

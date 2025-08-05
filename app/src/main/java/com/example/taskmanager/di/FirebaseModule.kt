@@ -1,5 +1,6 @@
 package com.example.taskmanager.di
 
+import android.content.Context
 import com.example.taskmanager.data.local.dao.TaskDao
 import com.example.taskmanager.data.remote.api.FirebaseService
 import com.example.taskmanager.data.repository.AuthRepositoryImpl
@@ -12,6 +13,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -55,12 +57,14 @@ object FirebaseModule {
     fun provideTaskRepository(
         taskDao: TaskDao,
         firebaseService: FirebaseService,
-        firebaseAuth: FirebaseAuth
+        firebaseAuth: FirebaseAuth,
+        @ApplicationContext context: Context
     ): TaskRepository {
         return TaskRepositoryImpl(
             taskDao = taskDao,
             firebaseService = firebaseService,
-            firebaseAuth = firebaseAuth
+            firebaseAuth = firebaseAuth,
+            applicationContext = context,
         )
     }
 }

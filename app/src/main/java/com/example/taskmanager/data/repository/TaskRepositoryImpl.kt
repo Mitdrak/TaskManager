@@ -1,16 +1,24 @@
 package com.example.taskmanager.data.repository
 
+import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.taskmanager.data.local.dao.TaskDao
 import com.example.taskmanager.data.local.mapper.toTask
+import com.example.taskmanager.data.local.workers.TaskReminderWorker
 import com.example.taskmanager.data.remote.api.FirebaseService
 import com.example.taskmanager.domain.mapper.toEntity
 import com.example.taskmanager.domain.model.Task
 import com.example.taskmanager.domain.repository.TaskRepository
+import com.example.taskmanager.util.TimeUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentChange
 import com.google.protobuf.LazyStringArrayList
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -24,6 +32,7 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -32,7 +41,8 @@ import javax.inject.Singleton
 class TaskRepositoryImpl @Inject constructor(
     private val taskDao: TaskDao,
     private val firebaseService: FirebaseService, // Tu FirebaseService real
-    private val firebaseAuth: FirebaseAuth
+    private val firebaseAuth: FirebaseAuth,
+    @ApplicationContext private val applicationContext: Context
 ) : TaskRepository {
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -74,12 +84,20 @@ class TaskRepositoryImpl @Inject constructor(
                                     Timber.d("Repository: Task Updated Firebase: ${task.taskId}")
                                     val roomEntities = task.toEntity()
                                     taskDao.updateTask(roomEntities)
+                                    if (task.notificationEnabled) {
+                                        Timber.d("Repository: Task notification enabled for: ${task.taskId}")
+                                        updateTaskNotifcation(task)
+                                    } else {
+                                        Timber.d("Repository: Task notification disabled for: ${task.taskId}")
+                                        cancelTaskNotification(task.taskId)
+                                    }
                                 }
 
                                 DocumentChange.Type.REMOVED -> {
                                     Timber.d("Repository: Task eliminated from Firebase: ${firebaseTasks.document.id}")
                                     taskDao.deleteTask(firebaseTasks.document.id)
                                     Timber.d("Repository: Task eliminated from Room with ID: ${firebaseTasks.document.id}")
+                                    cancelTaskNotification(firebaseTasks.document.id)
                                     return@collect
                                 }
                             }
@@ -92,6 +110,84 @@ class TaskRepositoryImpl @Inject constructor(
                 Timber.w("Repository: No user logged in, cannot observe tasks.")
             }
         }
+    }
+
+    override suspend fun enableNotification(task: Task): Result<Unit> {
+        val result = firebaseService.updateTask(task)
+        return if (result.isSuccess) {
+            Timber.d("Task updated successfully to firebase: ${task.title}")
+            updateTaskNotifcation(task)
+            Result.success(Unit)
+        } else {
+            Timber.e("Error with the update: ${result.exceptionOrNull()?.message}")
+            Result.failure(result.exceptionOrNull() ?: Exception("Error updating task"))
+        }
+    }
+
+    override suspend fun disableNotification(task: Task): Result<Unit>   {
+        val result = firebaseService.updateTask(task)
+        return if (result.isSuccess) {
+            Timber.d("Task updated successfully to firebase: ${task.title}")
+            cancelTaskNotification(task.taskId)
+            Result.success(Unit)
+        } else {
+            Timber.e("Error with the update: ${result.exceptionOrNull()?.message}")
+            Result.failure(result.exceptionOrNull() ?: Exception("Error updating task"))
+        }
+    }
+    override fun cancelTaskNotification(taskId: String) {
+        // The unique name must match exactly what was used for enqueueUniqueWork
+        val uniqueWorkName = "task_start_notification_$taskId"
+
+        // We use getInstance(context) to get the singleton WorkManager instance
+        WorkManager.getInstance(applicationContext).cancelUniqueWork(uniqueWorkName)
+
+        Timber.d("WorkManager notification for task ID: $taskId has been canceled.")
+    }
+
+    override fun updateTaskNotifcation(task: Task) {
+
+        val taskStartHourMillis =TimeUtils.convertTimeToMillis(
+            task.timeStart,
+            task.dateStart
+        )
+        if (taskStartHourMillis == null) {
+            Timber.w("Task start time is null for task ID: ${task.taskId}. Notification not scheduled.")
+            return
+        }
+
+
+        val currentTimeMillis = System.currentTimeMillis()
+        var delayMillis = taskStartHourMillis - currentTimeMillis
+
+        // Si la hora de inicio ya pasó, dispara la notificación inmediatamente (retraso 0).
+        if (delayMillis < 0) {
+            delayMillis = 0L // Importante: usar L para Long
+            Timber.w("Task start hour for ID ${task.taskId} is in the past. Scheduling notification immediately.")
+        }
+
+        // Crear los datos de entrada para el Worker
+        val inputData = Data.Builder()
+            .putString(TaskReminderWorker.TASK_ID_KEY, task.taskId)
+            .build()
+
+        // Crear la solicitud de trabajo One-Time
+        val notificationWorkRequest = OneTimeWorkRequestBuilder<TaskReminderWorker>()
+            .setInputData(inputData)
+            .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+            .addTag("task_start_notification_$task.taskId") // Etiqueta única para cada tarea
+            .build()
+
+        // Encolar el trabajo con WorkManager
+        // Usar ExistingWorkPolicy.REPLACE para reemplazar cualquier trabajo pendiente
+        // con la misma ID única si la tarea se edita y se vuelve a guardar.
+        WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+            "task_start_notification_${task.taskId}", // Nombre único para esta tarea
+            ExistingWorkPolicy.REPLACE,
+            notificationWorkRequest
+        )
+        Timber.d("Task 'start time' notification scheduled for task ID: ${task.taskId} with delay: $delayMillis ms")
+
     }
 
     override suspend fun getAllTasks(): Result<Unit> {

@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
@@ -173,7 +174,6 @@ fun TaskDetailsContent(
                 minute
             )
             if (selectedEndTime != null && selectedEndTime!! < selectedStartTime!!) {
-                /*viewModel.onUiEvent(NewTaskUiEvent.ShowSnackbar("End time cannot be before start time"))*/
                 Timber.e("Start time cannot be after end time")
                 return@TimePickerDialog
             }
@@ -199,7 +199,6 @@ fun TaskDetailsContent(
                 minute
             )
             if (selectedStartTime != null && selectedEndTime != null && selectedEndTime!! < selectedStartTime!!) {
-                /*viewModel.onUiEvent(NewTaskUiEvent.ShowSnackbar("End time cannot be before start time"))*/
                 Timber.e("End time cannot be before start time")
                 return@TimePickerDialog
             }
@@ -263,8 +262,9 @@ fun TaskDetailsContent(
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
 
             ) {
+
                 Icon(
-                    imageVector = Icons.Filled.Notifications,
+                    imageVector = if (taskDetailState.notificationEnabled) Icons.Filled.Notifications else Icons.Filled.NotificationsOff,
                     contentDescription = "Delete Task", tint = MaterialTheme.colorScheme.onPrimary
                 )
             }

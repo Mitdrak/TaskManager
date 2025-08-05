@@ -13,17 +13,16 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object DatabaseModule{
+object DatabaseModule {
 
     @Provides
     @Singleton
     fun provideAppDataBase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(
-            context.applicationContext,
-            AppDatabase::class.java,
-            "app_database"
-        ).build()
+            context.applicationContext, AppDatabase::class.java, "app_database"
+        ).fallbackToDestructiveMigration().build()
     }
+
     @Provides
     @Singleton
     fun provideTaskDao(appDatabase: AppDatabase): TaskDao {

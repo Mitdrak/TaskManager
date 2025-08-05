@@ -44,6 +44,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -55,7 +56,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.taskmanager.MainActivity
 import com.example.taskmanager.R
 import com.example.taskmanager.presentation.common.theme.TaskManagerTheme
 import com.example.taskmanager.presentation.screens.login.state.LoginUiEvent
@@ -64,20 +67,27 @@ import timber.log.Timber
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    onRegisterClick: () -> Unit,
-    viewModel: LoginViewModel = hiltViewModel()
+    onLoginSuccess: () -> Unit, onRegisterClick: () -> Unit, viewModel: LoginViewModel = hiltViewModel()
 ) {
 
     val loginState by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val activity = LocalContext.current as MainActivity
+    val lifecycleOwner = LocalLifecycleOwner.current
 
+    LaunchedEffect(key1 = lifecycleOwner.lifecycle) {
+        // We use flowWithLifecycle to ensure the coroutine is active only when the
+        // composable is at least in the STARTED state.
+        // We are observing the lifecycle state, so every time the state changes, this block is launched.
+        // You could also use LaunchedEffect(key1 = true) to execute only once.
+        // For permissions on startup, a simple 'key1 = true' is often sufficient and cleaner.
+        activity.askNotificationPermission()
+    }
     LaunchedEffect(Unit) {
         viewModel.snackbarEvent.collect { message ->
             Timber.d("Snackbar message: $message")
             snackbarHostState.showSnackbar(
-                message = message,
-                withDismissAction = false
+                message = message, withDismissAction = false
             )
             viewModel.onUiEvent(LoginUiEvent.SnackbarDismissed)
         }
@@ -92,8 +102,7 @@ fun LoginScreen(
                     dismissActionContentColor = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
-        }
-    ) {
+        }) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -108,6 +117,7 @@ fun LoginScreen(
                 fontSize = 34.sp,
                 fontWeight = Bold,
                 modifier = Modifier.padding(start = 16.dp)
+
             )
             Text(
                 text = "Welcome back! Please enter your details.",
@@ -117,11 +127,8 @@ fun LoginScreen(
                 modifier = Modifier.padding(start = 16.dp, top = 8.dp)
             )
             Text(
-                text = "Email",
-                fontSize = 14.sp,
-                modifier = Modifier.padding(
-                    start = 16.dp,
-                    top = 16.dp
+                text = "Email", fontSize = 14.sp, modifier = Modifier.padding(
+                    start = 16.dp, top = 16.dp
                 )
             )
             val focusManager = LocalFocusManager.current
@@ -130,11 +137,9 @@ fun LoginScreen(
             val focusRequester2 = remember { FocusRequester() }
             OutlinedTextField(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(
-                    onNext = {
-                        focusRequester2.requestFocus()
-                    }
-                ),
+                keyboardActions = KeyboardActions(onNext = {
+                    focusRequester2.requestFocus()
+                }),
                 maxLines = 1,
                 value = loginState.emailOrMobile,
                 onValueChange = { viewModel.onUiEvent(LoginUiEvent.EmailOrMobileChanged(it)) },
@@ -151,9 +156,7 @@ fun LoginScreen(
                 },
                 modifier = Modifier
                     .padding(
-                        start = 16.dp,
-                        top = 8.dp,
-                        end = 16.dp
+                        start = 16.dp, top = 8.dp, end = 16.dp
                     )
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.inverseOnSurface)
@@ -162,24 +165,19 @@ fun LoginScreen(
 
             )
             Text(
-                text = "Password",
-                fontSize = 14.sp,
-                modifier = Modifier.padding(
-                    start = 16.dp,
-                    top = 16.dp
+                text = "Password", fontSize = 14.sp, modifier = Modifier.padding(
+                    start = 16.dp, top = 16.dp
                 )
             )
 
             val keyBoardController = LocalSoftwareKeyboardController.current
             OutlinedTextField(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        /*focusManager.clearFocus()*/
-                        keyBoardController?.hide()
-                        viewModel.onUiEvent(LoginUiEvent.Submit)
-                    }
-                ),
+                keyboardActions = KeyboardActions(onDone = {
+                    /*focusManager.clearFocus()*/
+                    keyBoardController?.hide()
+                    viewModel.onUiEvent(LoginUiEvent.Submit)
+                }),
                 maxLines = 1,
                 value = loginState.password,
                 onValueChange = { viewModel.onUiEvent(LoginUiEvent.PasswordChanged(it)) },
@@ -201,17 +199,14 @@ fun LoginScreen(
                         modifier = Modifier.clickable(
                             onClick = {
                                 viewModel.onUiEvent(LoginUiEvent.ShowPassword)
-                            }
-                        ),
+                            }),
                         imageVector = Icons.Outlined.Visibility,
                         contentDescription = "Password Icon",
                     )
                 },
                 modifier = Modifier
                     .padding(
-                        start = 16.dp,
-                        top = 8.dp,
-                        end = 16.dp
+                        start = 16.dp, top = 8.dp, end = 16.dp
                     )
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.inverseOnSurface)
@@ -222,13 +217,9 @@ fun LoginScreen(
             Row(
                 modifier = Modifier
                     .padding(
-                        start = 16.dp,
-                        top = 16.dp,
-                        end = 16.dp
+                        start = 16.dp, top = 16.dp, end = 16.dp
                     )
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
@@ -241,14 +232,9 @@ fun LoginScreen(
                     )
                 }
                 Text(
-                    text = "Forgot Password?",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
+                    text = "Forgot Password?", fontSize = 14.sp, color = MaterialTheme.colorScheme.primary, modifier = Modifier
                         .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = RoundedCornerShape(15.dp)
+                            width = 1.dp, color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(15.dp)
                         )
                         .padding(10.dp)
                 )
@@ -264,8 +250,7 @@ fun LoginScreen(
                     horizontal = 16.dp,
                 ),
                 gradientColors = listOf(
-                    MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.secondary
+                    MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary
                 ),
                 text = "Log in",
                 borderColor = MaterialTheme.colorScheme.primary,
@@ -327,16 +312,12 @@ fun GradientOutlinedButton(
             .height(50.dp) // Height of the button
             .background(if (enabled) Brush.linearGradient(gradientColors) else Brush.linearGradient(disabledGradientColor)) // Gradient background
             .padding(
-                horizontal = 16.dp,
-                vertical = 8.dp
+                horizontal = 16.dp, vertical = 8.dp
             ), // Padding inside the button
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = text,
-            fontSize = 18.sp,
-            color = textColor,
-            style = MaterialTheme.typography.labelLarge
+            text = text, fontSize = 18.sp, color = textColor, style = MaterialTheme.typography.labelLarge
         )
     }
 }
@@ -344,9 +325,7 @@ fun GradientOutlinedButton(
 
 @Composable
 fun LoginButton(
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    onClick: () -> Unit
+    modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit
 ) {
 
     GradientOutlinedButton(
@@ -356,8 +335,7 @@ fun LoginButton(
             horizontal = 16.dp,
         ),
         gradientColors = listOf(
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.secondary
+            MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary
         ),
         text = "Log in",
     )
@@ -366,23 +344,15 @@ fun LoginButton(
 
 @Composable
 fun GoogleLoginButton(
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    onClick: () -> Unit
+    modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit
 ) {
     OutlinedButton(
-        enabled = enabled,
-        onClick = {},
-        shape = RoundedCornerShape(15.dp),
-        modifier = Modifier
-            .padding(
+        enabled = enabled, onClick = {}, shape = RoundedCornerShape(15.dp), modifier = Modifier.padding(
                 horizontal = 16.dp
             )
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.icons8_google),
@@ -402,21 +372,13 @@ fun GoogleLoginButton(
 
 @Composable
 fun FacebookLoginButton(
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    onClick: () -> Unit
+    modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit
 ) {
     OutlinedButton(
-        enabled = enabled,
-        onClick = {},
-        shape = RoundedCornerShape(15.dp),
-        modifier = Modifier
-            .padding(horizontal = 16.dp)
+        enabled = enabled, onClick = {}, shape = RoundedCornerShape(15.dp), modifier = Modifier.padding(horizontal = 16.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.facebook_svgrepo_com),

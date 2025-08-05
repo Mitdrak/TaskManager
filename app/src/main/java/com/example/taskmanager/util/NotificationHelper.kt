@@ -48,14 +48,12 @@ class NotificationHelper(
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     fun showTaskStartNotification(taskId: String, taskTitle: String, taskDescription: String) {
         val intent = Intent(context, MainActivity::class.java).apply {
-            // Cuando el usuario toque la notificación, se abre MainActivity
-            // y puedes pasar el ID de la tarea para ir directamente a los detalles de esa tarea
             putExtra("task_id", taskId)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         val pendingIntent: PendingIntent = PendingIntent.getActivity(
             context,
-            taskId.hashCode(), // Request code único para cada tarea
+            taskId.hashCode(), // Request code
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
@@ -66,10 +64,9 @@ class NotificationHelper(
             .setContentText(taskDescription)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
-            .setAutoCancel(true) // Se cierra al tocar
-            .setStyle(NotificationCompat.BigTextStyle().bigText(taskDescription)) // Para texto largo
+            .setAutoCancel(true)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(taskDescription))
 
-        // Un ID de notificación único para cada tarea
         val notificationId = NOTIFICATION_ID_TASK_REMINDER_BASE + taskId.hashCode()
         notificationManagerCompat.notify(notificationId, builder.build())
     }
