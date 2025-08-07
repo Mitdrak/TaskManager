@@ -15,13 +15,10 @@ Modern UI: A clean, responsive, and intuitive user interface built entirely with
 Offline Support: Firestore's persistence enables users to view and manage tasks even when offline.
 
 📸 Screenshots
-
-Login Screen
-![Screenshot of Login Screen](screenshots/LoginScreen.png "App Login Screen")
-Home Screen
-![Screenshot of Home Screen](screenshots/HomeScreen.png "App Home Screen")
-
-Task List
+<div align="center">
+  <img src="screenshots/LoginScreen.png" width="250" alt="Screen 1">
+  <img src="screenshots/HomeScreen.png" width="250" alt="Screen 2">
+</div>
 
 [Screenshot of Login Screen]
 
