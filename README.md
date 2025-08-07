@@ -33,7 +33,15 @@ Offline Support: Firestore's persistence enables users to view and manage tasks 
   <img src="screenshots/LighMode/NewTaskScreenLight.png" width="250" alt="Login Screen Light">
 </div>
 
-An example of the UI components:
+## Features
+<div align="center">
+  <img src="screenshots/Gifs/homeAnimation.gif" width="200" alt="Feature 1">
+  <img src="screenshots/Gifs/calendar.gif" width="200" alt="Feature 1">
+  <img src="screenshots/Gifs/newtask.gif" width="200" alt="Feature 1">
+  <img src="screenshots/Gifs/newtaskEdit.gif" width="200" alt="Feature 1">
+  <img src="screenshots/Gifs/taskdetail.gif" width="200" alt="Feature 1">
+  <img src="screenshots/Gifs/faillogin.gif" width="200" alt="Feature 1">
+</div>
 
 ## 🛠 Tech Stack & Architecture
 This project is built with a modern tech stack and follows the principles of Clean Architecture with an MVVM (Model-View-ViewModel) pattern.
@@ -59,8 +67,6 @@ Remote: Cloud Firestore for real-time, multi-user data storage.
 Local: Room for offline caching.
 
 Authentication: Firebase Authentication for secure user management.
-
-Logging: Timber for smart and efficient logging.
 
 
 ## 🚀 Setup and Installation
