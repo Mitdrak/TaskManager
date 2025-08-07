@@ -1,7 +1,7 @@
-Task Manager - Android App
+# Task Manager - Android App
 Task Manager is a modern, native Android application designed to help users build and maintain positive habits. It features an intelligent task suggestion system powered by AI to help users stay productive and motivated. The app is built with a focus on clean architecture and the latest Android development technologies.
 
-✨ Features
+## ✨ Features
 User Authentication: Secure sign-up and login using Firebase Authentication (Email/Password).
 
 Habit & Task Management: Create, read, update, and delete daily tasks and long-term habits.
@@ -14,7 +14,7 @@ Modern UI: A clean, responsive, and intuitive user interface built entirely with
 
 Offline Support: Firestore's persistence enables users to view and manage tasks even when offline.
 
-📸 Screenshots Dark Mode
+## 📸 Screenshots Dark Mode
 <div align="center">
   <img src="screenshots/LoginScreen.png" width="250" alt="Login Screen">
   <img src="screenshots/SignUpScreen.png" width="250" alt="SignUp Screen">
@@ -24,23 +24,26 @@ Offline Support: Firestore's persistence enables users to view and manage tasks 
   <img src="screenshots/NewTaskExample.png" width="250" alt="NewTaskExample Screen">
 </div>
 
-[Screenshot of Login Screen]
-
-[Screenshot of Calendar View]
-
-[Screenshot of your task list, similar to the UI you've shown]
+## 📸 Screenshots Light Mode
+<div align="center">
+  <img src="screenshots/LighMode/LoginScreenLight.png" width="250" alt="Login Screen Light">
+  <img src="screenshots/LighMode/SignUpScreenLight.png" width="250" alt="Login Screen Light">
+  <img src="screenshots/LighMode/HomeScreenLight.png" width="250" alt="Login Screen Light">
+  <img src="screenshots/LighMode/CalendarScreenLight.png" width="250" alt="Login Screen Light">
+  <img src="screenshots/LighMode/NewTaskScreenLight.png" width="250" alt="Login Screen Light">
+</div>
 
 An example of the UI components:
 
-🛠 Tech Stack & Architecture
+## 🛠 Tech Stack & Architecture
 This project is built with a modern tech stack and follows the principles of Clean Architecture with an MVVM (Model-View-ViewModel) pattern.
 
-Architecture
+## Architecture
 Clean Architecture: Separates the project into three distinct layers (Domain, Data, and Presentation) to promote separation of concerns, testability, and maintainability.
 
 MVVM: The presentation layer uses the MVVM pattern, where the View (Composables) observes state changes from the ViewModel.
 
-Tech Stack
+## Tech Stack
 UI: Jetpack Compose with Material 3 for a fully declarative and modern UI.
 
 Asynchronous Programming: Kotlin Coroutines and Flow for managing background threads and handling streams of data.
@@ -60,15 +63,15 @@ Authentication: Firebase Authentication for secure user management.
 Logging: Timber for smart and efficient logging.
 
 
-🚀 Setup and Installation
+## 🚀 Setup and Installation
 To run this project locally, you will need to configure your Firebase backend.
 
-1. Clone the repository:
+### 1. Clone the repository:
 
 git clone https://github.com/Mitdrak/TaskManager.git
 cd TaskManager
 
-2. Firebase Configuration:
+### 2. Firebase Configuration:
 
 Go to the Firebase Console and create a new project.
 
@@ -80,7 +83,7 @@ Place the downloaded google-services.json file in the app/ directory of this pro
 
 Enable Services: In the Firebase console, enable Authentication (with the Email/Password provider) and Cloud Firestore.
 
-3. Firestore Database Setup:
+### 3. Firestore Database Setup:
 
 In the Cloud Firestore section of the console, create your database.
 
@@ -103,7 +106,7 @@ allow read, write: if request.auth != null && request.auth.uid == userId;
 }
 }
 
-4. Build and Run:
+### 4. Build and Run:
 
 Open the project in Android Studio.
 
@@ -111,7 +114,7 @@ Let Gradle sync the dependencies.
 
 Build and run the app on an emulator or a physical device.
 
-👤 Contact
+## 👤 Contact
 [Sergio Carriel] – [sergio.acs@hotmail.com]
 
 Distributed under the MIT license. See LICENSE for more information.
