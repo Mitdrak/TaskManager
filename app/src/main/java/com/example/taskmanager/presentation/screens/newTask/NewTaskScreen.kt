@@ -574,6 +574,8 @@ fun NewTaskScreen(
             Button(
                 onClick = {
                     viewModel.onUiEvent(NewTaskUiEvent.AddTask(selectedHour?.timeInMillis))
+                    selectedTime = null
+                    selectedTimeEnd = null
                 },
                 enabled = isFieldsNotEmpty.value,
                 shape = RoundedCornerShape(16.dp),

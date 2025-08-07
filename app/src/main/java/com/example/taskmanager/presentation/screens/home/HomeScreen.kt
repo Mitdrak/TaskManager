@@ -73,7 +73,7 @@ fun HomeScreen(
     navigateToTasks: () -> Unit,
     navigateToTaskDetails: (String) -> Unit = {},
     onLogout: () -> Unit = {},
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
@@ -122,13 +122,13 @@ fun HomeScreen(
                         .size(60.dp)
                         .clip(RoundedCornerShape(20.dp))
                         .background(MaterialTheme.colorScheme.primary)
-                        .padding(8.dp)
                         .clickable(
                             onClick = {
                                 println("Add")
                                 navigateToNewTask()
                             },
                         )
+                        .padding(8.dp)
                 )
             },
         ) {
@@ -194,7 +194,7 @@ fun HomeScreen(
                             modifier = Modifier.background(color = MaterialTheme.colorScheme.onPrimary)
                         )
                         Text(
-                            text = if(LocalTime.now().hour < 12) "Morning" else "Evening",
+                            text = if (LocalTime.now().hour < 12) "Morning" else "Evening",
                             style = MaterialTheme.typography.headlineLarge,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
@@ -437,7 +437,7 @@ fun GradientLinearProgressBar(
         .fillMaxWidth()
         .height(8.dp)
         .clip(RoundedCornerShape(50)),
-    gradientColors: List<Color>
+    gradientColors: List<Color>,
 ) {
     val safeProgress = progress.coerceIn(0f, 1f).let {
         if (it.isNaN() || it.isInfinite()) 0f else it

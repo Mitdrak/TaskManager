@@ -176,13 +176,13 @@ fun CalendarScreenContent(
                 .size(60.dp)
                 .clip(RoundedCornerShape(20.dp))
                 .background(MaterialTheme.colorScheme.primary)
-                .padding(8.dp)
                 .clickable(
                     onClick = {
                         println("Add")
                         navigateToNewTask()
                     },
                 )
+                .padding(8.dp)
         )
     }) {
         Column(

@@ -86,6 +86,7 @@ class TaskRepositoryImpl @Inject constructor(
                                     taskDao.updateTask(roomEntities)
                                     if (task.notificationEnabled) {
                                         Timber.d("Repository: Task notification enabled for: ${task.taskId}")
+
                                         updateTaskNotifcation(task)
                                     } else {
                                         Timber.d("Repository: Task notification disabled for: ${task.taskId}")
@@ -164,7 +165,9 @@ class TaskRepositoryImpl @Inject constructor(
         if (delayMillis < 0) {
             delayMillis = 0L // Importante: usar L para Long
             Timber.w("Task start hour for ID ${task.taskId} is in the past. Scheduling notification immediately.")
+            return
         }
+
 
         // Crear los datos de entrada para el Worker
         val inputData = Data.Builder()

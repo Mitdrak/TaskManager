@@ -59,7 +59,7 @@ class NotificationHelper(
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_background) // ¡Tu icono pequeño!
+            .setSmallIcon(R.mipmap.ic_launcher) // ¡Tu icono pequeño!
             .setContentTitle(taskTitle)
             .setContentText(taskDescription)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
